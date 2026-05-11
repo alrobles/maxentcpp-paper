@@ -95,6 +95,44 @@ ecologists, conservation biologists, and biogeographers who use Maxent in
 reproducible, script-based workflows — from individual species analyses to
 large-scale biodiversity assessments.
 
+# Legacy software modernization in ecology
+
+Computational ecology relies on a small number of foundational software
+tools, many of which were written over a decade ago and have not been
+modernized for current computing environments. Reimplementing legacy
+scientific software in modern languages is uncommon in ecology but has
+important precedents in adjacent environmental sciences.
+
+Circuitscape, the standard tool for landscape connectivity modeling,
+was rewritten from Python to Julia, achieving order-of-magnitude
+speedups while preserving result equivalence [@Hall2021]. The LANDIS-II
+forest landscape model was re-engineered from monolithic C into a
+modular C# framework with automated testing and version control
+[@Scheller2009]. Most recently, the WaterGAP global hydrological model
+was reprogrammed from Fortran to Python with systematic cross-validation
+against the original [@Nyenah2025]. Closer to species distribution
+modeling, `maxnet` [@Phillips2024maxnet] represents the original MaxEnt
+author's own reimplementation using R and `glmnet` — preserving the
+same statistical model but employing a different optimization algorithm
+(coordinate descent on the full feature matrix rather than sequential
+coordinate ascent).
+
+These precedents share common motivations: eliminating obsolete runtime
+dependencies, enabling integration into modern scripted workflows,
+improving maintainability, and opening the algorithm to inspection and
+extension. `maxentcpp` follows this lineage but goes further by
+**preserving the original optimization algorithm** (sequential
+coordinate ascent with $\ell_1$-penalized Newton steps) rather than
+substituting an approximate equivalent, and by **validating
+per-iteration numerical equivalence** rather than only comparing
+final-state outputs.
+
+To our knowledge, `maxentcpp` is the first project in ecology to
+systematically reimplement a widely used SDM algorithm in a compiled
+language with per-iteration numerical validation against the original
+implementation, combining faithful algorithm porting with quantitative
+fidelity testing as a companion package (`maxentcppCompTest`).
+
 # State of the field
 
 Several R packages provide access to Maxent-family models.
@@ -196,6 +234,46 @@ accessible repositories:
    comparison scripts (40 commits).
 4. `alrobles/maxentcpp` — the release repository with the clean,
    CRAN-ready package (47 commits).
+
+# Ecosystem comparison
+
+The R ecosystem contains several packages that provide access to MaxEnt
+models, each employing a distinct integration strategy:
+
+| Package | MaxEnt integration | Dependency |
+|---------|-------------------|------------|
+| **dismo** [@Hijmans2023] | rJava bridge to `maxent.jar` | Java JDK, rJava |
+| **kuenm** [@Cobos2019] | `system2("java -jar maxent.jar")` | Java JDK |
+| **kuenm2** (Cobos et al.) | `glmnet` via forked `maxnet` code | glmnet |
+| **wallace** [@Kass2018wallace] | Delegates to ENMeval → maxnet or dismo | ENMeval |
+| **ENMTools** [@Warren2010] | `dismo::maxent()` directly | dismo, rJava |
+| **biomod2** [@Thuiller2009] | Java (`system2`) or `maxnet` | Optional Java or maxnet |
+| **maxentcpp** | Native C++17 via Rcpp | None (self-contained) |
+
+These packages can be grouped by their relationship to the MaxEnt
+algorithm:
+
+- **Black-box wrappers** (dismo, kuenm, ENMTools, biomod2 MAXENT mode):
+  invoke the Java binary and read output files. The optimizer is
+  inaccessible.
+- **Approximate reimplementations** (maxnet, kuenm2, biomod2 MAXNET
+  mode): use `glmnet` coordinate descent on the logistic regression
+  formulation. The statistical model is equivalent but the optimization
+  path differs, which can produce numerically different results for
+  threshold and hinge features.
+- **Faithful reimplementation** (maxentcpp): ports the original
+  Sequential optimizer to C++ and proves per-iteration numerical
+  equivalence.
+
+The unique contribution of `maxentcpp` is that it is the only package
+offering a compiled native reimplementation of the actual MaxEnt
+optimizer — preserving both the statistical model and the optimization
+algorithm while eliminating the Java dependency. This enables full
+optimizer transparency (per-iteration diagnostics), streaming
+evaluation for arbitrarily large rasters, and validated fidelity to
+within $10^{-9}$ of the Java reference on trained $\lambda$ parameters
+(on non-trivial asymmetric test fixtures; symmetric fixtures agree to
+$< 10^{-14}$).
 
 # Research impact statement
 
