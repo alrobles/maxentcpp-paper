@@ -218,6 +218,23 @@ standardized fixtures, agreement reaches $< 10^{-14}$ relative error.
 either implementation can be loaded by the other, ensuring
 interoperability with existing workflows and archived models.
 
+## Development provenance
+
+The translation followed a phased approach across four publicly
+accessible repositories:
+
+1. `alrobles/Maxent` — a fork of the original `mrmaxent/Maxent`
+   [@Phillips2017] Java source code, where the architecture was analyzed
+   and each Java class was mapped to a C++ target (193 commits).
+2. `alrobles/maxentcpp-devel` — the development repository where the C++
+   port, Rcpp bindings, R interface, tests, and documentation were
+   iteratively built and refined (34 commits).
+3. `alrobles/maxentcppCompTest` — the cross-language fidelity test suite
+   containing Java oracle runners, golden trajectory files, and automated
+   comparison scripts (40 commits).
+4. `alrobles/maxentcpp` — the release repository with the clean,
+   CRAN-ready package (47 commits).
+
 # Ecosystem comparison
 
 The R ecosystem contains several packages that provide access to MaxEnt
@@ -254,24 +271,9 @@ optimizer — preserving both the statistical model and the optimization
 algorithm while eliminating the Java dependency. This enables full
 optimizer transparency (per-iteration diagnostics), streaming
 evaluation for arbitrarily large rasters, and validated fidelity to
-within $10^{-6}$ of the Java reference on trained parameters.
-
-## Development provenance
-
-The translation followed a phased approach across four publicly
-accessible repositories:
-
-1. `alrobles/Maxent` — a fork of the original `mrmaxent/Maxent`
-   [@Phillips2017] Java source code, where the architecture was analyzed
-   and each Java class was mapped to a C++ target (193 commits).
-2. `alrobles/maxentcpp-devel` — the development repository where the C++
-   port, Rcpp bindings, R interface, tests, and documentation were
-   iteratively built and refined (34 commits).
-3. `alrobles/maxentcppCompTest` — the cross-language fidelity test suite
-   containing Java oracle runners, golden trajectory files, and automated
-   comparison scripts (40 commits).
-4. `alrobles/maxentcpp` — the release repository with the clean,
-   CRAN-ready package (47 commits).
+within $10^{-9}$ of the Java reference on trained $\lambda$ parameters
+(on non-trivial asymmetric test fixtures; symmetric fixtures agree to
+$< 10^{-14}$).
 
 # Research impact statement
 
