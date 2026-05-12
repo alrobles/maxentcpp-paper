@@ -96,7 +96,7 @@ ORCID: \href{https://orcid.org/0000-0002-4741-8012}{0000-0002-4741-8012}
 \section*{Abstract}
 % ══════════════════════════════════════════════════════════════════════════
 
-\texttt{maxentcpp} is an R package that provides a native C++17
+\texttt{maxentcpp} is an R package offering a native C++17
 reimplementation of the Maximum Entropy (Maxent) algorithm for species
 distribution modeling~(SDM). The package translates the core
 continuous-predictor Maxent~3.4.4 fitting and projection algorithm into
@@ -114,17 +114,17 @@ implementation via a companion test package.
 \section*{Summary}
 % ══════════════════════════════════════════════════════════════════════════
 
-\texttt{maxentcpp} is an R package that provides a native C++17
+\texttt{maxentcpp} is an R package offering a native C++17
 reimplementation of the Maximum Entropy (Maxent) algorithm for species
 distribution modeling~(SDM).
 Maxent estimates the geographic distribution of a species from
-presence-only occurrence records and environmental covariates by finding
-the probability distribution of maximum entropy subject to constraints
-derived from the training data
+presence-only occurrence records and environmental covariates by
+identifying the probability distribution of maximum entropy subject to
+constraints derived from training data
 \cite{Phillips2006,Phillips2004}.
-Since its introduction, Maxent and its associated methodological papers
-have been cited tens of thousands of times across ecology, conservation
-biology, and biogeography \cite{Elith2011}.
+Since its introduction, Maxent and its foundational methodological papers
+have been cited extensively across ecology, conservation biology, and
+biogeography \cite{Elith2011}.
 
 The fitted model is a \emph{Gibbs distribution} over geographic space:
 \begin{equation}\label{eq:gibbs}
@@ -153,9 +153,9 @@ evaluation engine that processes environmental layers block-by-block
 through the \texttt{terra} package~\cite{Hijmans2024}, enabling
 continental-scale projections on commodity hardware without loading
 entire raster stacks into memory.
-Model diagnostics include AUC evaluation, permutation importance,
-response curves, and Multivariate Environmental Similarity Surfaces
-(MESS) for novelty detection.
+Tools for diagnosing model performance include AUC evaluation, permutation
+importance, response curves, and Multivariate Environmental Similarity
+Surfaces (MESS) for novelty detection.
 
 % ══════════════════════════════════════════════════════════════════════════
 \section*{Statement of need}
@@ -163,8 +163,8 @@ response curves, and Multivariate Environmental Similarity Surfaces
 
 Maxent is the \emph{de facto} standard for presence-only species
 distribution modeling~\cite{Merow2013}.
-However, the original Java implementation presents several practical
-barriers for modern ecological research workflows:
+However, the original Java implementation presents a number of practical
+barriers for present-day ecological research workflows:
 
 \begin{enumerate}[leftmargin=*,nosep]
   \item \textbf{Java dependency.}
@@ -185,7 +185,7 @@ barriers for modern ecological research workflows:
   \item \textbf{Scalability.}
     The Java implementation is single-threaded and GUI-centric.
     In multi-species, multi-scenario workflows (e.g., 500
-    species $\times$ 4 climate scenarios), file~I/O overhead
+    species $\times$ 4 climatic scenarios), file~I/O overhead
     accumulates: each species run requires writing SWD files, invoking
     the JVM, and parsing output files.
     A~native in-memory API eliminates this per-call overhead entirely.
@@ -203,8 +203,8 @@ acceptance, the package will be installable with
 \texttt{install.packages("maxentcpp")}.
 The package operates entirely in memory through R objects and integrates
 seamlessly with the \texttt{terra} spatial data ecosystem.
-The target audience is ecologists, conservation biologists, and
-biogeographers who use Maxent in reproducible, script-based
+The intended users are ecologists, conservation biologists, and
+biogeographers who employ Maxent in reproducible, script-based
 workflows---from individual species analyses to large-scale biodiversity
 assessments.
 
@@ -221,7 +221,7 @@ sciences.
 
 \texttt{maxentcpp} follows the same modernization logic as projects such
 as Circuitscape.jl~\cite{Hall2021}: remove brittle runtime dependencies,
-improve integration with modern workflows, and retain scientific
+improve integration with present-day workflows, and retain scientific
 comparability with established software.
 
 Closer to species distribution modeling, \texttt{maxnet}
@@ -231,15 +231,15 @@ statistical model but employing a different optimization algorithm
 (coordinate descent on the full feature matrix rather than sequential
 coordinate ascent).
 
-\texttt{maxentcpp} contributes to this modernization pattern by targeting
-a stricter compatibility goal than most wrapper packages: preserving the
-Java Maxent \texttt{density.Sequential} optimizer trajectory rather than
-only reproducing final predictions.
-To our knowledge, \texttt{maxentcpp} is the first R package to target
-the Java Maxent~3.4.4 \texttt{density.Sequential} optimizer through a
-native C++ port and to publish per-iteration trajectory tests against the
-Java implementation via the companion package
-\texttt{maxentcppCompTest}~\cite{maxentcppCompTest2025}.
+\texttt{maxentcpp} advances this modernization trend by pursuing a
+stricter compatibility objective than most wrapper packages: preserving
+the Java Maxent \texttt{density.Sequential} optimizer trajectory rather
+than solely reproducing final predictions.
+To the best of current knowledge, \texttt{maxentcpp} is the first
+R~package to target the Java Maxent~3.4.4 \texttt{density.Sequential}
+optimizer through a native C++ port and to publish per-iteration
+trajectory tests against the Java implementation via the companion
+package \texttt{maxentcppCompTest}~\cite{maxentcppCompTest2025}.
 
 % ══════════════════════════════════════════════════════════════════════════
 \section*{State of the field}
@@ -355,11 +355,11 @@ larger than available RAM.
 \texttt{maxentcpp} was built as a new package rather than contributing
 to existing projects for three reasons.
 First, a faithful port of the original Java optimizer (sequential
-coordinate ascent with $\ell_1$-penalized Newton steps) requires a C++
+coordinate ascent using $\ell_1$-penalized Newton steps) requires a C++
 engine that cannot be expressed through \texttt{glmnet}'s API;
 contributing this to \texttt{maxnet} would change its core algorithm.
 Second, \texttt{dismo}'s architecture is tightly coupled to
-\texttt{rJava} and \texttt{raster}; the native C++ approach eliminates
+\texttt{rJava} and \texttt{raster}; the native C++ strategy eliminates
 this dependency chain entirely.
 Third, the header-based C++ library design of \texttt{maxentcpp} enables
 reuse in other packages or standalone applications beyond~R---something
@@ -484,7 +484,7 @@ least-significant bit level.
 
 \subsection*{Numerical fidelity}
 
-Every C++ class is a direct port of the corresponding Java class,
+Each C++ class is a direct translation of its Java counterpart,
 preserving the same control flow, regularization logic, and numerical
 constants.
 This design choice prioritizes backward compatibility: users migrating
@@ -740,7 +740,7 @@ methods, ADMM) or Bayesian inference.
 However, such reformulations would produce different results than the
 widely used Java implementation, breaking comparability with published
 analyses.
-The design choice in \texttt{maxentcpp} is explicitly to preserve this
+The design of \texttt{maxentcpp} explicitly aims to preserve this
 comparability.
 
 % ══════════════════════════════════════════════════════════════════════════
