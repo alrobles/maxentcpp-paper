@@ -103,31 +103,38 @@ assessments.
 
 # Legacy software modernization in ecology
 
-Computational ecology relies on a small number of foundational software
-tools, many of which were written over a decade ago and have not been
-modernized for current computing environments. Reimplementing legacy
-scientific software in modern languages is uncommon in ecology but has
-important precedents in adjacent environmental sciences.
+`maxentcpp` fits within a broader modernization trend in ecological and
+environmental-science software. Circuitscape.jl [@Hall2021] illustrates
+how established ecological algorithms can be reimplemented in a modern
+high-performance language to improve scalability and parallel execution,
+while retaining continuity with a widely used landscape-connectivity
+tool. In R, the spatial ecosystem has similarly moved from older
+`sp`/`raster`-centered workflows toward `sf` [@Pebesma2018] and `terra`
+[@Hijmans2024], and SDM packages such as `ENMeval` [@Kass2021] and
+`biomod2` [@Thuiller2009] have followed this transition --- with
+`ENMeval` additionally removing Java/`rJava` from its default path in
+favor of `maxnet`.
 
-`maxentcpp` follows the same modernization logic as projects such as
-Circuitscape.jl [@Hall2021]: remove brittle runtime dependencies, improve
-integration with present-day workflows, and retain scientific
-comparability with established software.
+Within Maxent workflows specifically, existing modernization efforts
+address different parts of the problem. `rmaxent` [@Baumgartner2017]
+provides Java-free projection of previously fitted Maxent models from
+`.lambdas` files, parses feature weights and normalizers, and implements
+MESS-related diagnostics, but does not replace Java for model fitting.
+`maxnet` [@Phillips2024maxnet] provides a complete Java-free fitting
+implementation based on `glmnet` coordinate descent --- preserving the
+same statistical model but employing a different optimization algorithm
+that can produce numerically different results, particularly for
+threshold and hinge features.
 
-Closer to species distribution modeling, `maxnet` [@Phillips2024maxnet]
-represents the original MaxEnt author's own reimplementation using R and
-`glmnet` --- preserving the same statistical model but employing a
-different optimization algorithm (coordinate descent on the full feature
-matrix rather than sequential coordinate ascent).
-
-`maxentcpp` advances this modernization trend by pursuing a stricter
-compatibility objective than most wrapper packages: preserving the Java
-Maxent `density.Sequential` optimizer trajectory rather than solely
-reproducing final predictions. To the best of current knowledge,
-`maxentcpp` is the first R package to target the Java Maxent 3.4.4
-`density.Sequential` optimizer through a native C++ port and to publish
-per-iteration trajectory tests against the Java implementation via the
-companion package `maxentcppCompTest` [@maxentcppCompTest2025].
+`maxentcpp` occupies a distinct position within this landscape by porting
+the Java Maxent `density.Sequential` training optimizer itself to C++17
+and validating optimizer trajectories against the Java implementation.
+To the best of current knowledge, `maxentcpp` is the first R package to
+target the Java Maxent 3.4.4 `density.Sequential` optimizer through a
+native C++ port and to publish per-iteration trajectory tests via the
+companion package `maxentcppCompTest` [@maxentcppCompTest2025]. Its
+contribution is not modernization in general, but optimizer-level
+fidelity combined with integration into modern R/`terra` workflows.
 
 # State of the field
 
