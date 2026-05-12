@@ -1,0 +1,40 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "maxentcpp: A C++ reimplementation of Maximum Entropy species distribution modeling for R"
+authors:
+  - family-names: Robles Fernández
+    given-names: Ángel Luis
+    orcid: "https://orcid.org/0000-0002-4741-8012"
+    affiliation: "Department of Ecology and Evolutionary Biology, University of Kansas"
+version: 1.0.0
+date-released: "2026-05-11"
+license: MIT
+repository-code: "https://github.com/alrobles/maxentcpp"
+url: "https://alrobles.github.io/maxentcpp/"
+keywords:
+  - species distribution modeling
+  - maximum entropy
+  - Maxent
+  - R
+  - C++
+  - Rcpp
+  - ecology
+  - biogeography
+references:
+  - type: article
+    authors:
+      - family-names: Phillips
+        given-names: Steven J.
+      - family-names: Anderson
+        given-names: Robert P.
+      - family-names: Schapire
+        given-names: Robert E.
+    title: "Maximum entropy modeling of species geographic distributions"
+    journal: "Ecological Modelling"
+    volume: 190
+    issue: "3-4"
+    start: 231
+    end: 259
+    year: 2006
+    doi: "10.1016/j.ecolmodel.2005.03.026"
