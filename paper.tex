@@ -1,59 +1,130 @@
-\documentclass[11pt,a4paper]{article}
+\documentclass[10pt,letterpaper]{article}
+\usepackage[top=0.85in,left=2.75in,footskip=0.75in,marginparwidth=2in]{geometry}
 
-% ── Packages ──────────────────────────────────────────────────────────────
+% use Unicode characters
 \usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
-\usepackage{lmodern}
-\usepackage[margin=2.5cm]{geometry}
-\usepackage{amsmath,amssymb}
-\usepackage{graphicx}
-\usepackage{booktabs}
-\usepackage{hyperref}
-\usepackage{cleveref}
-\usepackage{natbib}
-\usepackage{xcolor}
-\usepackage{enumitem}
+
+% clean citations
+\usepackage{cite}
+
+% hyperref makes references clicky
+\usepackage{nameref,hyperref}
+
+% line numbers
+\usepackage[right]{lineno}
+
+% improves typesetting in LaTeX
 \usepackage{microtype}
+\DisableLigatures[f]{encoding = *, family = * }
 
-\hypersetup{
-  colorlinks=true,
-  linkcolor=blue!60!black,
-  citecolor=blue!60!black,
-  urlcolor=blue!60!black
-}
+% text layout
+\raggedright
+\setlength{\parindent}{0.5cm}
+\textwidth 5.25in
+\textheight 8.75in
 
-% ── Metadata ──────────────────────────────────────────────────────────────
-\title{\texttt{maxentcpp}: A C++ reimplementation of Maximum Entropy
-       species distribution modeling for R}
+% use adjustwidth environment to exceed text width
+\usepackage{changepage}
 
-\author{
-  \'Angel Luis Robles Fern\'andez\thanks{Corresponding author.
-    ORCID: \href{https://orcid.org/0000-0002-4741-8012}{0000-0002-4741-8012}.
-    E-mail: \texttt{a.l.robles.fernandez@gmail.com}}\\[4pt]
-  \small Department of Ecology and Evolutionary Biology,\\
-  \small University of Kansas, Lawrence, KS, United States
-}
+% adjust caption style
+\usepackage[aboveskip=1pt,labelfont=bf,labelsep=period,singlelinecheck=off]{caption}
 
-\date{May 2026}
+% remove brackets from references
+\makeatletter
+\renewcommand{\@biblabel}[1]{\quad#1.}
+\makeatother
 
+% headrule, footrule and page numbers
+\usepackage{lastpage,fancyhdr,graphicx}
+\usepackage{epstopdf}
+\pagestyle{myheadings}
+\pagestyle{fancy}
+\fancyhf{}
+\rfoot{\thepage/\pageref{LastPage}}
+\renewcommand{\footrule}{\hrule height 2pt \vspace{2mm}}
+\fancyheadoffset[L]{2.25in}
+\fancyfootoffset[L]{2.25in}
+
+% colored text
+\usepackage{color}
+
+% define custom colors
+\definecolor{Gray}{gray}{.25}
+
+% graphics
+\usepackage{graphicx}
+
+% side captions
+\usepackage{sidecap}
+
+% text wrap around figures
+\usepackage{wrapfig}
+\usepackage[pscoord]{eso-pic}
+\usepackage[fulladjust]{marginnote}
+\reversemarginpar
+
+% additional packages for math and tables
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{enumitem}
+
+% ── document begins ──────────────────────────────────────────────────────
 \begin{document}
-\maketitle
+\vspace*{0.35in}
+
+% title
+\begin{flushleft}
+{\Large
+\textbf\newline{\texttt{maxentcpp}: A C++ reimplementation of Maximum Entropy species distribution modeling for R.}
+}
+\newline
+% authors
+\\
+\'Angel Luis Robles Fern\'andez\textsuperscript{1,*}
+\\
+\bigskip
+\bf{1} Department of Ecology and Evolutionary Biology, University of Kansas, Lawrence, KS, United States
+\\
+\bigskip
+* a.l.robles.fernandez@gmail.com
+\\
+ORCID: \href{https://orcid.org/0000-0002-4741-8012}{0000-0002-4741-8012}
+
+\end{flushleft}
 
 % ══════════════════════════════════════════════════════════════════════════
-\section{Summary}
+\section*{Abstract}
 % ══════════════════════════════════════════════════════════════════════════
 
-\texttt{maxentcpp} is an R package that provides a high-performance
-C++17 reimplementation of the Maximum Entropy (Maxent) algorithm for
-species distribution modeling~(SDM).
+\texttt{maxentcpp} is an R package that provides a native C++17
+reimplementation of the Maximum Entropy (Maxent) algorithm for species
+distribution modeling~(SDM). The package translates the core
+continuous-predictor Maxent~3.4.4 fitting and projection algorithm into
+C++17 with R~bindings via Rcpp, eliminating the Java Runtime Environment
+dependency entirely. It supports all five feature types, output
+transformations in raw, logistic, and cloglog scales, and a streaming
+raster evaluation engine for continental-scale projections. Numerical
+fidelity is validated per-iteration against the original Java
+implementation via a companion test package.
+
+% now start line numbers
+\linenumbers
+
+% ══════════════════════════════════════════════════════════════════════════
+\section*{Summary}
+% ══════════════════════════════════════════════════════════════════════════
+
+\texttt{maxentcpp} is an R package that provides a native C++17
+reimplementation of the Maximum Entropy (Maxent) algorithm for species
+distribution modeling~(SDM).
 Maxent estimates the geographic distribution of a species from
 presence-only occurrence records and environmental covariates by finding
 the probability distribution of maximum entropy subject to constraints
 derived from the training data
-\citep{Phillips2006,Phillips2004}.
-Since its introduction, Maxent has become one of the most widely cited
-methods in ecology and conservation biology, with over 13\,000 citations
-\citep{Elith2011}.
+\cite{Phillips2006,Phillips2004}.
+Since its introduction, Maxent and its associated methodological papers
+have been cited tens of thousands of times across ecology, conservation
+biology, and biogeography \cite{Elith2011}.
 
 The fitted model is a \emph{Gibbs distribution} over geographic space:
 \begin{equation}\label{eq:gibbs}
@@ -67,19 +138,19 @@ $Z = \sum_{\mathbf{x}}\exp\!\bigl(\sum_j \lambda_j f_j(\mathbf{x})\bigr)$
 is the normalizing constant (partition function).
 The optimizer finds the $\lambda_j$ that maximize the regularized
 log-likelihood via sequential coordinate ascent with
-$\ell_1$ (lasso) penalties \citep{Phillips2006,Elith2011}.
+$\ell_1$ (lasso) penalties \cite{Phillips2006,Elith2011}.
 
 The original Maxent software is a Java desktop application
-\citep{Phillips2017}.
-\texttt{maxentcpp} translates the complete Maxent~3.4.4 algorithm into
-C++17 with R~bindings via Rcpp \citep{Eddelbuettel2011} and
-RcppEigen \citep{Bates2013}, eliminating the Java Runtime Environment
-dependency entirely.
+\cite{Phillips2017}.
+\texttt{maxentcpp} translates the core continuous-predictor Maxent~3.4.4
+fitting and projection algorithm into C++17 with R~bindings via
+Rcpp~\cite{Eddelbuettel2011} and RcppEigen~\cite{Bates2013}, eliminating
+the Java Runtime Environment dependency entirely.
 The package supports all five feature types (linear, quadratic, product,
 hinge, and threshold), output transformations in raw, logistic, and
 complementary log-log (cloglog) scales, and a streaming raster
 evaluation engine that processes environmental layers block-by-block
-through the \texttt{terra} package \citep{Hijmans2024}, enabling
+through the \texttt{terra} package~\cite{Hijmans2024}, enabling
 continental-scale projections on commodity hardware without loading
 entire raster stacks into memory.
 Model diagnostics include AUC evaluation, permutation importance,
@@ -87,21 +158,19 @@ response curves, and Multivariate Environmental Similarity Surfaces
 (MESS) for novelty detection.
 
 % ══════════════════════════════════════════════════════════════════════════
-\section{Statement of need}
+\section*{Statement of need}
 % ══════════════════════════════════════════════════════════════════════════
 
 Maxent is the \emph{de facto} standard for presence-only species
-distribution modeling \citep{Merow2013}.
+distribution modeling~\cite{Merow2013}.
 However, the original Java implementation presents several practical
 barriers for modern ecological research workflows:
 
 \begin{enumerate}[leftmargin=*,nosep]
   \item \textbf{Java dependency.}
-    Users must install and configure a compatible JDK\@.
-    Version conflicts between Java~8, 11, 17, and~21 produce silent
-    failures, and the \texttt{rJava} bridge package is one of the most
-    common sources of installation errors in the R~ecosystem,
-    particularly on macOS and HPC clusters.
+    Java and \texttt{rJava} configuration can be a recurring source of
+    installation and runtime failures, particularly across operating
+    systems, Java versions, and managed computing environments.
     While \texttt{conda} environments and Docker containers can manage
     Java versioning, they add deployment complexity and are not standard
     practice in many ecology research groups.
@@ -122,23 +191,25 @@ barriers for modern ecological research workflows:
     A~native in-memory API eliminates this per-call overhead entirely.
 
   \item \textbf{Maintenance.}
-    The Java Maxent codebase has remained essentially unchanged since
-    version~3.4.4 (released November 2020), with only two active
-    contributors \citep{Phillips2017}.
+    The Java Maxent codebase has received only minor updates since
+    version~3.4.4, with limited active development~\cite{Phillips2017}.
 \end{enumerate}
 
 \texttt{maxentcpp} addresses these barriers by providing a native C++/R
-implementation that installs with a single
-\texttt{install.packages("maxentcpp")} call, operates entirely in memory
-through R objects, and integrates seamlessly with the \texttt{terra}
-spatial data ecosystem.
+implementation.
+At present, the development version can be installed from GitHub using
+\texttt{remotes::install\_github("alrobles/maxentcpp")}; following CRAN
+acceptance, the package will be installable with
+\texttt{install.packages("maxentcpp")}.
+The package operates entirely in memory through R objects and integrates
+seamlessly with the \texttt{terra} spatial data ecosystem.
 The target audience is ecologists, conservation biologists, and
 biogeographers who use Maxent in reproducible, script-based
 workflows---from individual species analyses to large-scale biodiversity
 assessments.
 
 % ══════════════════════════════════════════════════════════════════════════
-\section{Legacy software modernization in ecology}
+\section*{Legacy software modernization in ecology}
 % ══════════════════════════════════════════════════════════════════════════
 
 Computational ecology relies on a small number of foundational software
@@ -148,109 +219,103 @@ Reimplementing legacy scientific software in modern languages is uncommon
 in ecology but has important precedents in adjacent environmental
 sciences.
 
-Circuitscape, the standard tool for landscape connectivity modeling, was
-rewritten from Python to Julia, achieving order-of-magnitude speedups
-while preserving result equivalence \citep{Hall2021}.
-The LANDIS-II forest landscape model was re-engineered from monolithic~C
-into a modular C\# framework with automated testing and version control
-\citep{Scheller2009}.
-Most recently, the WaterGAP global hydrological model was reprogrammed
-from Fortran to Python with systematic cross-validation against the
-original \citep{Nyenah2025}.
+\texttt{maxentcpp} follows the same modernization logic as projects such
+as Circuitscape.jl~\cite{Hall2021}: remove brittle runtime dependencies,
+improve integration with modern workflows, and retain scientific
+comparability with established software.
+
 Closer to species distribution modeling, \texttt{maxnet}
-\citep{Phillips2024maxnet} represents the original MaxEnt author's own
+\cite{Phillips2024maxnet} represents the original MaxEnt author's own
 reimplementation using~R and \texttt{glmnet}---preserving the same
 statistical model but employing a different optimization algorithm
 (coordinate descent on the full feature matrix rather than sequential
 coordinate ascent).
 
-These precedents share common motivations: eliminating obsolete runtime
-dependencies, enabling integration into modern scripted workflows,
-improving maintainability, and opening the algorithm to inspection and
-extension.
-\texttt{maxentcpp} follows this lineage but goes further by
-\textbf{preserving the original optimization algorithm} (sequential
-coordinate ascent with $\ell_1$-penalized Newton steps) rather than
-substituting an approximate equivalent, and by \textbf{validating
-per-iteration numerical equivalence} rather than only comparing
-final-state outputs.
-
-To our knowledge, \texttt{maxentcpp} is the first project in ecology to
-systematically reimplement a widely used SDM algorithm in a compiled
-language with per-iteration numerical validation against the original
-implementation, combining faithful algorithm porting with quantitative
-fidelity testing as a companion package (\texttt{maxentcppCompTest}).
+\texttt{maxentcpp} contributes to this modernization pattern by targeting
+a stricter compatibility goal than most wrapper packages: preserving the
+Java Maxent \texttt{density.Sequential} optimizer trajectory rather than
+only reproducing final predictions.
+To our knowledge, \texttt{maxentcpp} is the first R package to target
+the Java Maxent~3.4.4 \texttt{density.Sequential} optimizer through a
+native C++ port and to publish per-iteration trajectory tests against the
+Java implementation via the companion package
+\texttt{maxentcppCompTest}~\cite{maxentcppCompTest2025}.
 
 % ══════════════════════════════════════════════════════════════════════════
-\section{State of the field}
+\section*{State of the field}
 % ══════════════════════════════════════════════════════════════════════════
 
 Several R packages provide access to Maxent-family models.
-\textbf{dismo} \citep{Hijmans2023} is the most widely used R interface
+\textbf{dismo}~\cite{Hijmans2023} is the most widely used R interface
 to Java Maxent; it wraps \texttt{maxent.jar} via \texttt{rJava},
 inheriting the JDK dependency and file~I/O overhead, and is currently in
 maintenance mode following the transition from \texttt{raster} to
 \texttt{terra}.
-\textbf{maxnet} \citep{Phillips2024maxnet} is a pure-R implementation
+\textbf{maxnet}~\cite{Phillips2024maxnet} is a pure-R implementation
 that uses \texttt{glmnet} for elastic-net regularization; while it
 avoids the Java dependency, it employs a different optimization
 algorithm (elastic net via coordinate descent on the full feature
 matrix) rather than the sequential coordinate-ascent optimizer of the
 original Maxent, which can produce numerically different results,
 particularly for threshold and hinge features.
-\textbf{ENMeval} \citep{Kass2021} is a model tuning and evaluation
+\textbf{ENMeval}~\cite{Kass2021} is a model tuning and evaluation
 framework that wraps either \texttt{dismo::maxent()} or
 \texttt{maxnet::maxnet()}; it does not implement the Maxent algorithm
 itself.
-\textbf{kuenm} \citep{Cobos2019} is a calibration and evaluation
+\textbf{kuenm}~\cite{Cobos2019} is a calibration and evaluation
 toolkit that relies on \texttt{dismo} or direct Java Maxent calls.
 
-\subsection{Empirical comparison: maxentcpp vs maxnet}
+\subsection*{Empirical comparison: maxentcpp vs maxnet}
 
 To quantify the practical differences between \texttt{maxentcpp} and
-\texttt{maxnet}, we compared both packages on a virtual species
-\citep{Leroy2016} with known true habitat suitability, constructed from
-the environmental layers bundled with \texttt{maxentcpp} (Annual Mean
-Temperature and Annual Precipitation over Central America, 2,371
+\texttt{maxnet}, we compared both packages on a virtual
+species~\cite{Leroy2016} with known true habitat suitability, constructed
+from the environmental layers bundled with \texttt{maxentcpp} (Annual
+Mean Temperature and Annual Precipitation over Central America, 2,371
 non-NA cells).
-The virtual species has a Gaussian niche centered at 20\,\textdegree{}C
-and 1,500\,mm, and 100 presence records were sampled proportionally to
-the true suitability surface (see the companion vignette
-\emph{Virtual Species Comparison}\footnote{%
+The virtual species has a Gaussian niche centered at
+20\,\textdegree{}C and 1,500\,mm, and 100 presence records were sampled
+proportionally to the true suitability surface (see the companion
+vignette \emph{Virtual Species Comparison}\footnote{%
   \url{https://alrobles.github.io/maxentcpp/articles/virtual_species_comparison.html}}
 for full reproducible code).
 
 Both packages were fitted with linear, quadratic, and hinge features.
-The results demonstrate high ecological equivalence:
+In this illustrative example, the two packages produced highly similar
+rank and spatial-overlap patterns:
 
-\begin{table}[htbp]
+\begin{table}[!ht]
 \centering
-\caption{Ecological equivalence metrics: \texttt{maxentcpp} vs
+\caption{{\bf Ecological equivalence metrics:} \texttt{maxentcpp} vs
          \texttt{maxnet} on a virtual species.}
-\label{tab:equivalence}
-\begin{tabular}{@{}lr@{}}
-\toprule
-Metric & Value \\
-\midrule
+\begin{tabular}{|l|r|}
+\hline
+\textbf{Metric} & \textbf{Value} \\
+\hline
 Schoener's $D$ & 0.93 \\
+\hline
 Spearman $\rho$ (rank correlation) & 0.95 \\
+\hline
 Pearson $r$ & 0.97 \\
+\hline
 Mean $|\Delta\text{cloglog}|$ & 0.053 \\
+\hline
 Max $|\Delta\text{cloglog}|$ & 0.43 \\
-\bottomrule
+\hline
 \end{tabular}
+\label{tab:equivalence}
 \end{table}
 
-These results confirm that \texttt{maxentcpp} and \texttt{maxnet}
-produce \textbf{ecologically equivalent predictions} for typical
-modeling scenarios (Schoener's $D > 0.9$ is conventionally interpreted
-as high niche overlap).
-The largest differences occur in the tails of the suitability
-distribution, where the two optimization algorithms
-(\texttt{maxentcpp}: sequential coordinate ascent; \texttt{maxnet}:
-elastic-net coordinate descent) regularize differently.
-Both packages recover the true niche with comparable accuracy
-(Spearman $\rho > 0.87$ vs true surface).
+These results suggest that \texttt{maxentcpp} and \texttt{maxnet}
+can produce highly similar predictions in a simple continuous-predictor
+setting (Schoener's $D > 0.9$ is conventionally interpreted as high
+niche overlap), while also showing non-negligible local differences in
+the tails of the suitability distribution, where the two optimization
+algorithms (\texttt{maxentcpp}: sequential coordinate ascent;
+\texttt{maxnet}: elastic-net coordinate descent) regularize differently.
+A broader simulation study across multiple species, sample sizes, and
+predictor correlation structures would be needed to establish general
+equivalence.
 
 The key practical scenarios where a user must choose \texttt{maxentcpp}
 over \texttt{maxnet} are:
@@ -260,31 +325,32 @@ over \texttt{maxnet} are:
 (3)~when streaming raster projection onto grids larger than available
 RAM is required.
 
-\subsection{Performance benchmarks}
+\subsection*{Performance benchmarks}
 
 Training time for the bundled \emph{Abeillia abeillei} dataset
 (73~presences, 2,371~background, linear + quadratic + hinge features):
 
-\begin{table}[htbp]
+\begin{table}[!ht]
 \centering
-\caption{Training time comparison.}
-\label{tab:benchmark}
-\begin{tabular}{@{}lr@{}}
-\toprule
-Package & Median time per fit \\
-\midrule
+\caption{{\bf Training time comparison.}}
+\begin{tabular}{|l|r|}
+\hline
+\textbf{Package} & \textbf{Median time per fit} \\
+\hline
 \texttt{maxentcpp} & $\sim$820\,ms \\
+\hline
 \texttt{maxnet}    & $\sim$530\,ms \\
-\bottomrule
+\hline
 \end{tabular}
+\label{tab:benchmark}
 \end{table}
 
 \texttt{maxnet} is faster for small datasets because \texttt{glmnet}'s
 coordinate descent is highly optimized for dense feature matrices.
-However, \texttt{maxentcpp}'s streaming evaluation avoids materializing
-the full prediction matrix, giving it an advantage for projection onto
-large rasters where \texttt{dismo}/Java Maxent would require disk-based
-intermediates.
+\texttt{maxentcpp}'s streaming evaluation avoids materializing the full
+prediction matrix, which is expected to reduce peak memory during
+projection; future benchmarks should quantify this advantage on rasters
+larger than available RAM.
 
 \texttt{maxentcpp} was built as a new package rather than contributing
 to existing projects for three reasons.
@@ -300,55 +366,62 @@ reuse in other packages or standalone applications beyond~R---something
 not achievable through modifications to existing R-only packages.
 
 % ══════════════════════════════════════════════════════════════════════════
-\section{Software design}
+\section*{Software design}
 % ══════════════════════════════════════════════════════════════════════════
 
-\subsection{Architecture}
+\subsection*{Architecture}
 
 \texttt{maxentcpp} is organized in three layers (C++ core, Rcpp bridge,
 R~interface), with the C++ core further split into algorithmic and
 infrastructure sublayers:
 
-\begin{table}[htbp]
+\begin{table}[!ht]
+\begin{adjustwidth}{-1.5in}{0in}
 \centering
-\caption{Architecture of \texttt{maxentcpp}: three layers with the C++
-         core divided into algorithmic and infrastructure sublayers.}
-\label{tab:arch}
-\begin{tabular}{@{}llr@{}}
-\toprule
-Layer & Key components & Lines \\
-\midrule
+\caption{{\bf Architecture of \texttt{maxentcpp}:} three layers with the
+         C++ core divided into algorithmic and infrastructure sublayers.}
+\begin{tabular}{|l|l|r|}
+\hline
+\textbf{Layer} & \textbf{Key components} & \textbf{Lines} \\
+\hline
 C++ core (algorithmic)
   & \texttt{Sequential}, \texttt{FeaturedSpace}, five feature types
   & $\sim$4\,500 \\
+\hline
 C++ core (I/O, diagnostics)
   & \texttt{BackgroundProvider}, grid I/O, CSV, MESS, response curves
   & $\sim$2\,400 \\
+\hline
 Rcpp bridge
-  & \texttt{rcpp\_*.cpp} external-pointer bindings \citep{Eddelbuettel2013}
+  & \texttt{rcpp\_*.cpp} external-pointer bindings~\cite{Eddelbuettel2013}
   & $\sim$3\,300 \\
+\hline
 R interface
   & \texttt{maxent\_run()}, feature generators, projection, evaluation,
     diagnostics
   & $\sim$2\,500 \\
-\bottomrule
+\hline
 \end{tabular}
+\label{tab:arch}
+\end{adjustwidth}
 \end{table}
 
-The C++ core uses Eigen \citep{Guennebaud2010} for dense linear algebra.
+The C++ core uses Eigen~\cite{Guennebaud2010} for dense linear algebra.
 Of the $\sim$6\,900 C++ lines, approximately 4\,500 implement the core
 algorithmic logic (optimizer, features, density) while the remainder
-handles I/O, Rcpp bindings, and diagnostics.
+handles I/O and diagnostics.
 The high-level \texttt{maxent\_run()} function provides a one-call
 workflow mirroring the Java GUI experience, while lower-level functions
 (\texttt{maxent\_generate\_features()}, \texttt{maxent\_featured\_space()},
 \texttt{maxent\_fit()}, \texttt{maxent\_project\_cloglog()}) offer full
 control over each modeling step.
 
-\subsection{Optimization algorithm}
+\subsection*{Optimization algorithm}
 
 The \texttt{Sequential} optimizer is a direct port of
-\texttt{density.Sequential} in Java Maxent~3.4.4.
+\texttt{density.Sequential} in Java Maxent~3.4.4, as represented by the
+public \texttt{mrmaxent/Maxent} repository and AMNH release notes (where
+3.4.4 is described as a minor bug-fix release).
 It minimizes the $\ell_1$-regularized negative log-likelihood:
 \begin{equation}\label{eq:objective}
   \mathcal{L}(\boldsymbol{\lambda})
@@ -389,8 +462,11 @@ features simultaneously.
 Convergence is tested every 20 iterations: training stops when the
 relative loss improvement falls below $10^{-5}$ or 500 iterations are
 reached.
+All constants in this section are taken directly from Java Maxent~3.4.4
+source files, and each statement is covered by a source-mapping test in
+\texttt{maxentcppCompTest}.
 
-\subsection{Streaming raster evaluation}
+\subsection*{Streaming raster evaluation}
 
 \texttt{maxentcpp} reads \texttt{terra::SpatRaster} objects
 block-by-block through a \texttt{BackgroundProvider} abstraction.
@@ -401,19 +477,22 @@ The partition function~$Z$ is accumulated across tiles by summing
 unnormalized densities
 $\exp(\sum_j \lambda_j f_j(\mathbf{x}_k))$ for each cell~$k$ in the
 tile, then normalizing once after all tiles are processed.
-This produces identical results to single-pass evaluation because the
-sum is commutative and no tile-boundary effects exist---each cell is
-scored independently.
+This produces results equivalent to single-pass evaluation because the
+mathematical sum is commutative and each cell is scored independently;
+floating-point summation order may introduce differences at the
+least-significant bit level.
 
-\subsection{Numerical fidelity}
+\subsection*{Numerical fidelity}
 
 Every C++ class is a direct port of the corresponding Java class,
 preserving the same control flow, regularization logic, and numerical
-constants (\Cref{tab:porting}).
+constants.
 This design choice prioritizes backward compatibility: users migrating
-from Java Maxent obtain identical results.
+from Java Maxent should obtain numerically equivalent results for
+implemented features under matched inputs, defaults, and deterministic
+settings.
 The fidelity contract is enforced by a dedicated companion package,
-\texttt{maxentcppCompTest} \citep{maxentcppCompTest2025}, which runs the
+\texttt{maxentcppCompTest}~\cite{maxentcppCompTest2025}, which runs the
 C++ optimizer and the original Java \texttt{density.Sequential} on
 shared test fixtures and compares per-iteration trajectories of loss,
 entropy, and $\lambda$~vectors.
@@ -433,24 +512,30 @@ algorithm limits sensitivity to parallelism-induced reordering.
 Cross-platform CI (Ubuntu, macOS, Windows with GCC, Clang, and MSVC)
 confirms that the test fixtures pass on all three compiler families.
 
-\begin{table}[htbp]
+\begin{table}[!ht]
 \centering
-\caption{Class-level porting map from Java Maxent to
+\caption{{\bf Class-level porting map} from Java Maxent to
          \texttt{maxentcpp}.}
-\label{tab:porting}
-\begin{tabular}{@{}ll@{}}
-\toprule
-\texttt{maxentcpp} (C++) & Java Maxent original \\
-\midrule
+\begin{tabular}{|l|l|}
+\hline
+\textbf{\texttt{maxentcpp} (C++)} & \textbf{Java Maxent original} \\
+\hline
 \texttt{LinearFeature}      & \texttt{density.LinearFeature}    \\
+\hline
 \texttt{QuadraticFeature}   & \texttt{density.SquareFeature}    \\
+\hline
 \texttt{ProductFeature}     & \texttt{density.ProductFeature}   \\
+\hline
 \texttt{HingeFeature}       & \texttt{density.HingeFeature}     \\
+\hline
 \texttt{ThresholdFeature}   & \texttt{density.ThresholdFeature} \\
+\hline
 \texttt{FeaturedSpace}      & \texttt{density.FeaturedSpace}    \\
+\hline
 \texttt{Sequential::run()}  & \texttt{density.Sequential.run()} \\
-\bottomrule
+\hline
 \end{tabular}
+\label{tab:porting}
 \end{table}
 
 \paragraph{Lambda file compatibility.}
@@ -460,42 +545,64 @@ Lambda files produced by either implementation can be loaded by the
 other, ensuring interoperability with existing workflows and archived
 models.
 
-\subsection{Feature completeness}
+\subsection*{Feature completeness}
 
 The following table summarizes the current scope of \texttt{maxentcpp}
-relative to Java Maxent~3.4.4 and \texttt{maxnet}:
+relative to Java Maxent~3.4.4 and \texttt{maxnet}.
+Legend: $\checkmark$ = implemented and tested;
+$\circ$ = partial or experimental;
+--- = not implemented.
 
-\begin{table}[htbp]
+\begin{table}[!ht]
+\begin{adjustwidth}{-1.5in}{0in}
 \centering
-\caption{Feature completeness: \texttt{maxentcpp} vs Java Maxent
+\caption{{\bf Feature completeness:} \texttt{maxentcpp} vs Java Maxent
          vs \texttt{maxnet}.}
-\label{tab:features}
-\small
-\begin{tabular}{@{}lccc@{}}
-\toprule
-Feature & \texttt{maxentcpp} & Java Maxent & \texttt{maxnet} \\
-\midrule
-Linear features              & \checkmark & \checkmark & \checkmark \\
-Quadratic features           & \checkmark & \checkmark & \checkmark \\
-Product features             & \checkmark & \checkmark & \checkmark \\
-Hinge features               & \checkmark & \checkmark & \checkmark \\
-Threshold features           & \checkmark & \checkmark & \checkmark \\
-Raw/logistic/cloglog output  & \checkmark & \checkmark & \checkmark \\
-AUC evaluation               & \checkmark & \checkmark & via ENMeval \\
-Permutation importance       & \checkmark & \checkmark & via ENMeval \\
-Response curves              & \checkmark & \checkmark & partial \\
-MESS maps                    & \checkmark & \checkmark & -- \\
-Clamping / fade-by-clamping  & \checkmark & \checkmark & -- \\
-Lambda file I/O              & \checkmark & \checkmark & -- \\
-Streaming raster projection  & \checkmark & -- & -- \\
-Bias grids                   & \checkmark & \checkmark & via \texttt{offset} \\
-Categorical variables        & -- & \checkmark & \checkmark \\
-Replicate runs / cross-val.  & -- & \checkmark & via ENMeval \\
-Jackknife variable selection & -- & \checkmark & -- \\
-Missing data handling        & -- & \checkmark & \checkmark \\
-SWD-to-raster projection     & -- & \checkmark & -- \\
-\bottomrule
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Feature} & \textbf{\texttt{maxentcpp}} & \textbf{Java Maxent 3.4.4} & \textbf{\texttt{maxnet} 0.1.4} \\
+\hline
+Linear features              & $\checkmark$ & $\checkmark$ & $\checkmark$ \\
+\hline
+Quadratic features           & $\checkmark$ & $\checkmark$ & $\checkmark$ \\
+\hline
+Product features             & $\checkmark$ & $\checkmark$ & $\checkmark$ \\
+\hline
+Hinge features               & $\checkmark$ & $\checkmark$ & $\checkmark$ \\
+\hline
+Threshold features           & $\checkmark$ & $\checkmark$ & $\checkmark$ \\
+\hline
+Raw/logistic/cloglog output  & $\checkmark$ & $\checkmark$ & $\checkmark$ \\
+\hline
+AUC evaluation               & $\checkmark$ & $\checkmark$ & via ENMeval \\
+\hline
+Permutation importance       & $\checkmark$ & $\checkmark$ & via ENMeval \\
+\hline
+Response curves              & $\checkmark$ & $\checkmark$ & $\circ$ \\
+\hline
+MESS maps                    & $\checkmark$ & $\checkmark$ & --- \\
+\hline
+Clamping / fade-by-clamping  & $\checkmark$ & $\checkmark$ & --- \\
+\hline
+Lambda file I/O              & $\checkmark$ & $\checkmark$ & --- \\
+\hline
+Streaming raster projection  & $\checkmark$ & --- & --- \\
+\hline
+Bias grids                   & $\checkmark$ & $\checkmark$ & via \texttt{offset} \\
+\hline
+Categorical variables        & --- & $\checkmark$ & $\checkmark$ \\
+\hline
+Replicate runs / cross-val.  & --- & $\checkmark$ & via ENMeval \\
+\hline
+Jackknife variable selection & --- & $\checkmark$ & --- \\
+\hline
+Missing data handling        & --- & $\checkmark$ & $\checkmark$ \\
+\hline
+SWD-to-raster projection     & --- & $\checkmark$ & --- \\
+\hline
 \end{tabular}
+\label{tab:features}
+\end{adjustwidth}
 \end{table}
 
 Categorical variables, replicate runs, jackknife, and SWD-to-raster
@@ -504,14 +611,14 @@ Users requiring these features should continue using Java Maxent or
 \texttt{maxnet}.
 We plan to add categorical variable support in a future release.
 
-\subsection{Development provenance}
+\subsection*{Development provenance}
 
 The translation followed a phased approach across four publicly
 accessible repositories:
 
 \begin{enumerate}[leftmargin=*,nosep]
   \item \texttt{alrobles/Maxent}---a fork of the original
-    \texttt{mrmaxent/Maxent} \citep{Phillips2017} Java source code,
+    \texttt{mrmaxent/Maxent}~\cite{Phillips2017} Java source code,
     where the architecture was analyzed and each Java class was mapped to
     a C++ target (193~commits).
   \item \texttt{alrobles/maxentcpp-devel}---the development repository
@@ -525,37 +632,53 @@ accessible repositories:
 \end{enumerate}
 
 % ══════════════════════════════════════════════════════════════════════════
-\section{Ecosystem comparison}
+\section*{Ecosystem comparison}
 % ══════════════════════════════════════════════════════════════════════════
 
 The R ecosystem contains several packages that provide access to MaxEnt
 models, each employing a distinct integration strategy:
 
-\begin{table}[htbp]
+\begin{table}[!ht]
+\begin{adjustwidth}{-1.5in}{0in}
 \centering
-\caption{R packages providing MaxEnt access.}
-\label{tab:ecosystem}
-\small
-\begin{tabular}{@{}lll@{}}
-\toprule
-Package & MaxEnt integration & Dependency \\
-\midrule
-\textbf{dismo} \citep{Hijmans2023}
+\caption{{\bf R packages providing MaxEnt access.}}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Package} & \textbf{MaxEnt integration} & \textbf{Dependency} \\
+\hline
+\textbf{dismo}~\cite{Hijmans2023}
   & rJava bridge to \texttt{maxent.jar} & Java JDK, rJava \\
-\textbf{kuenm} \citep{Cobos2019}
+\hline
+\textbf{kuenm}~\cite{Cobos2019}
   & \texttt{system2("java -jar maxent.jar")} & Java JDK \\
+\hline
 \textbf{kuenm2} (Cobos et al.)
   & \texttt{glmnet} via forked \texttt{maxnet} code & glmnet \\
-\textbf{wallace} \citep{Kass2018wallace}
+\hline
+\textbf{wallace}~\cite{Kass2018wallace}
   & Delegates to ENMeval $\to$ maxnet or dismo & ENMeval \\
-\textbf{ENMTools} \citep{Warren2010}
+\hline
+\textbf{ENMTools}~\cite{Warren2010}
   & \texttt{dismo::maxent()} directly & dismo, rJava \\
-\textbf{biomod2} \citep{Thuiller2009}
+\hline
+\textbf{biomod2}~\cite{Thuiller2009}
   & Java (\texttt{system2}) or \texttt{maxnet} & Optional Java or maxnet \\
+\hline
+\textbf{rmaxent}~\cite{Baumgartner2017}
+  & Java-free projection of fitted models, \texttt{.lambdas} parsing & None (projection only) \\
+\hline
+\textbf{MIAmaxent}~\cite{Vollering2019}
+  & MaxEnt via subset selection (not lasso) & glmnet \\
+\hline
+\textbf{SDMtune}~\cite{Vignali2020}
+  & Trains/tunes SDMs via dismo or maxnet & dismo or maxnet \\
+\hline
 \textbf{maxentcpp}
   & Native C++17 via Rcpp & None (self-contained) \\
-\bottomrule
+\hline
 \end{tabular}
+\label{tab:ecosystem}
+\end{adjustwidth}
 \end{table}
 
 These packages can be grouped by their relationship to the MaxEnt
@@ -572,17 +695,18 @@ algorithm:
     differs, which can produce numerically different results for
     threshold and hinge features.
   \item \textbf{Faithful reimplementation} (maxentcpp): ports the
-    original Sequential optimizer to C++ and proves per-iteration
+    original Sequential optimizer to C++ and validates per-iteration
     numerical equivalence.
 \end{itemize}
 
-The unique contribution of \texttt{maxentcpp} is that it is the only
-package offering a compiled native reimplementation of the actual MaxEnt
-optimizer---preserving both the statistical model and the optimization
-algorithm while eliminating the Java dependency.
+The distinguishing contribution of \texttt{maxentcpp} is that it is the
+only package offering a compiled native reimplementation of the actual
+MaxEnt \texttt{density.Sequential} optimizer---preserving both the
+statistical model and the optimization algorithm while eliminating the
+Java dependency.
 
 % ══════════════════════════════════════════════════════════════════════════
-\section{Limitations and inherited assumptions}
+\section*{Limitations and inherited assumptions}
 % ══════════════════════════════════════════════════════════════════════════
 
 The Maxent~3.4.4 algorithm that \texttt{maxentcpp} faithfully reproduces
@@ -593,18 +717,17 @@ has well-documented limitations that users should be aware of:
     The number of features (particularly hinge and threshold) grows with
     the number of environmental variables, which can cause
     identifiability issues in high-dimensional settings
-    \citep{Elith2011,Merow2013}.
+    \cite{Elith2011,Merow2013}.
 
   \item \textbf{Sensitivity to background sampling.}
     Maxent's output is influenced by the choice and size of the
     background sample, which affects the estimated density and can bias
-    predictions in undersampled regions \citep{Phillips2009}.
+    predictions in undersampled regions~\cite{Phillips2009}.
 
   \item \textbf{$\ell_1$ regularization limitations.}
     The sequential coordinate ascent with $\ell_1$ penalties produces
     sparse models but does not guarantee selection of the ``correct''
-    features under high correlation among predictors
-    \citep{Hastie2015}.
+    features under high correlation among predictors~\cite{Hastie2015}.
 
   \item \textbf{No principled uncertainty quantification.}
     Unlike Bayesian approaches or bootstrap-based methods, the Maxent
@@ -621,18 +744,19 @@ The design choice in \texttt{maxentcpp} is explicitly to preserve this
 comparability.
 
 % ══════════════════════════════════════════════════════════════════════════
-\section{Research impact statement}
+\section*{Research impact statement}
 % ══════════════════════════════════════════════════════════════════════════
 
-\texttt{maxentcpp} is designed as a numerically faithful alternative to
-Java Maxent for R-based ecological workflows.
-The term ``drop-in replacement'' applies specifically to the implemented
-features listed in the completeness table above: for those features,
-\texttt{maxentcpp} produces results identical to Java Maxent (to within
-IEEE~754 double-precision limits) given the same inputs, defaults, and
-random seed.
-Features not yet implemented (categorical variables, replicate runs,
-jackknife) require continued use of Java Maxent.
+\texttt{maxentcpp} currently provides a numerically faithful
+implementation of the core continuous-predictor Maxent fitting and
+projection workflow for the implemented feature classes and output
+transformations.
+It is not yet a complete replacement for all Java Maxent workflows,
+because categorical predictors, replicate runs, jackknife diagnostics,
+missing-data handling, and SWD-to-raster projection are not implemented
+in the current release.
+For those features, users should continue using Java Maxent or
+\texttt{maxnet}.
 
 The package is distributed under the MIT license (compatible with
 Eigen's MPL2 and RcppEigen's GPL-2 via the ``or later'' clause), with
@@ -648,14 +772,16 @@ covering feature generation, optimization convergence, spatial
 projection, Java numerical equivalency, model diagnostics, and
 end-to-end workflows.
 
-By providing a dependency-free, memory-efficient, and numerically
-faithful Maxent implementation, \texttt{maxentcpp} lowers the barrier
-for large-scale biodiversity assessments, climate-change projections,
-and conservation prioritization studies that rely on presence-only
-species distribution models.
+By providing a dependency-free, memory-efficient, and numerically faithful
+Maxent implementation, \texttt{maxentcpp} may lower the barrier for
+large-scale biodiversity assessments, climate-change projections, and
+conservation prioritization studies that rely on presence-only species
+distribution models, once the remaining Java Maxent workflow
+features---especially categorical predictors and replicate
+diagnostics---are implemented or clearly documented as out of scope.
 
 % ══════════════════════════════════════════════════════════════════════════
-\section{AI usage disclosure}
+\section*{AI usage disclosure}
 % ══════════════════════════════════════════════════════════════════════════
 
 Generative AI tools were used during the development of
@@ -723,9 +849,11 @@ The \texttt{Rcpp}, \texttt{RcppEigen}, and \texttt{terra} package
 maintainers are gratefully acknowledged for providing the infrastructure
 that makes \texttt{maxentcpp} possible.
 
+\nolinenumbers
+
 % ══════════════════════════════════════════════════════════════════════════
-\bibliographystyle{plainnat}
 \bibliography{paper}
+\bibliographystyle{abbrv}
 % ══════════════════════════════════════════════════════════════════════════
 
 \end{document}
