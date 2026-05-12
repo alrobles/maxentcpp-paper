@@ -159,12 +159,13 @@ relies on `dismo` or direct Java Maxent calls.
 ## Empirical comparison: maxentcpp vs maxnet
 
 To quantify the practical differences between `maxentcpp` and `maxnet`,
-we compared both packages on a virtual species with known true habitat
-suitability, constructed from the environmental layers bundled with
-`maxentcpp` (Annual Mean Temperature and Annual Precipitation over
-Central America, 2,371 non-NA cells). The virtual species has a
-Gaussian niche centered at 20 °C and 1,500 mm, and 100 presence
-records were sampled proportionally to the true suitability surface
+we compared both packages on a virtual species [@Leroy2016] with known
+true habitat suitability, constructed from the environmental layers
+bundled with `maxentcpp` (Annual Mean Temperature and Annual
+Precipitation over Central America, 2,371 non-NA cells). The virtual
+species has a Gaussian niche centered at 20 °C and 1,500 mm, and 100
+presence records were sampled proportionally to the true suitability
+surface
 (see the companion vignette
 [Virtual Species Comparison](https://alrobles.github.io/maxentcpp/articles/virtual_species_comparison.html)
 for full reproducible code).
@@ -227,12 +228,14 @@ R-only packages.
 
 ## Architecture
 
-`maxentcpp` is organized in three layers:
+`maxentcpp` is organized in three layers (C++ core, Rcpp bridge, R
+interface), with the C++ core further split into algorithmic and
+infrastructure sublayers:
 
 | Layer | Key components | Lines |
 |-------|----------------|------:|
 | C++ core (algorithmic) | `Sequential`, `FeaturedSpace`, five feature types | ~4,500 |
-| C++ core (I/O, binding, diagnostics) | `BackgroundProvider`, grid I/O, CSV, MESS, response curves | ~2,400 |
+| C++ core (I/O, diagnostics) | `BackgroundProvider`, grid I/O, CSV, MESS, response curves | ~2,400 |
 | Rcpp bridge | `rcpp_*.cpp` external-pointer bindings [@Eddelbuettel2013] | ~3,300 |
 | R interface | `maxent_run()`, feature generators, projection, evaluation, diagnostics | ~2,500 |
 
