@@ -476,6 +476,108 @@ would produce different results than the widely used Java implementation,
 breaking comparability with published analyses. The design of
 `maxentcpp` explicitly aims to preserve this comparability.
 
+# CRAN compliance and software quality
+
+Achieving CRAN acceptance requires more than passing `R CMD check`:
+packages must meet strict software-quality standards that safeguard
+user environments and ensure reproducibility across platforms
+[@CRANPolicy2024; @WRE2024]. During the pre-submission review process,
+`maxentcpp` underwent targeted improvements to satisfy these
+requirements, detailed below.
+
+## Example documentation: `\dontrun{}` to `\donttest{}`
+
+CRAN policy distinguishes between examples that *cannot* execute
+(missing external software, API keys) and those that are merely slow or
+resource-intensive. The former require `\dontrun{}`; the latter must use
+`\donttest{}` so that CRAN's check infrastructure can optionally execute
+them with `--run-donttest` [@CRANcookbook2024]. All 36 example blocks in
+`maxentcpp` were originally wrapped in `\dontrun{}`, which suppresses
+execution entirely and misleads users with a `# Not run:` comment.
+These were migrated to `\donttest{}`, converting the documentation
+examples into live, testable code that CRAN infrastructure can verify
+on every platform.
+
+## Self-contained examples with synthetic data
+
+Changing the wrapper from `\dontrun{}` to `\donttest{}` revealed a
+deeper issue: most examples referenced undefined objects (e.g., a
+pre-fitted model `m`, a grid `g1`, or a results data frame) that only
+existed in the context of a vignette narrative. Under `\dontrun{}` this
+was invisible because the code was never evaluated; under `\donttest{}`
+it caused immediate failures.
+
+Every example was rewritten to be self-contained, generating synthetic
+data at the point of use:
+
+```r
+# Example: maxent_permutation_importance
+n  <- 50
+env <- data.frame(bio1 = runif(n, 10, 30), bio12 = runif(n, 500, 2500))
+f   <- maxent_generate_features(env, features = "lqh")
+fs  <- maxent_featured_space(f, sample(n, 10))
+m   <- maxent_fit(fs)
+maxent_permutation_importance(m, fs)
+```
+
+This pattern — using `runif()`, `data.frame()`, and the package's own
+constructors (`maxent_grid_from_matrix`, `maxent_featured_space`,
+`maxent_fit`) — ensures that each example runs in isolation without
+relying on objects from other functions or prior sessions.
+
+## Graphics state restoration via `on.exit()`
+
+CRAN requires that functions never leave the user's session in an
+altered state: any modifications to `par()`, `options()`, or the working
+directory must be reverted, even if the function errors mid-execution
+[@WRE2024]. The `maxent_plot_response_curves()` function modified `par()`
+inside a loop to configure PNG output files but restored settings
+manually at the end of each iteration — a pattern that leaks state on
+error.
+
+The fix extracts device management into an internal helper,
+`.maxent_safe_png()`, that encapsulates the open-device → set-par →
+plot → close-device lifecycle with guaranteed cleanup:
+
+```r
+.maxent_safe_png <- function(file, width, height, expr) {
+  grDevices::png(file, width = width, height = height)
+  oldpar <- graphics::par(mar = c(4, 4, 2, 1))
+  on.exit({ graphics::par(oldpar); grDevices::dev.off() }, add = TRUE)
+  force(expr)
+}
+```
+
+Because `on.exit()` is function-scoped, placing the cleanup inside a
+dedicated helper avoids the anti-pattern of accumulating or overwriting
+exit handlers within a loop.
+
+## Optional dependency management
+
+`maxentcpp` lists `terra` as a suggested (optional) dependency for
+raster I/O operations. CRAN checks may run with
+`_R_CHECK_FORCE_SUGGESTS_=false`, causing examples that assume `terra`
+is installed to fail. All terra-dependent examples are now guarded:
+
+```r
+if (requireNamespace("terra", quietly = TRUE)) {
+  # example code using terra
+}
+```
+
+This ensures graceful skipping when the optional dependency is
+unavailable, following CRAN's recommended pattern for structuring
+examples that depend on suggested packages [@CRANcookbook2024].
+
+## Continuous integration
+
+GitHub Actions workflows run `R CMD check --as-cran` on Ubuntu (R
+release and R-devel), macOS (R release), and Windows (R release), with
+the `--run-donttest` flag enabled to exercise all example code. The CI
+matrix also includes a dedicated CRAN-preflight job that sets
+`_R_CHECK_FORCE_SUGGESTS_=false` to simulate CRAN's minimal-dependency
+environment.
+
 # Research impact statement
 
 `maxentcpp` currently provides a numerically faithful implementation of

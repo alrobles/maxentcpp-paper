@@ -754,6 +754,123 @@ The design of \texttt{maxentcpp} explicitly aims to preserve this
 comparability.
 
 % ══════════════════════════════════════════════════════════════════════════
+\section*{CRAN compliance and software quality}
+% ══════════════════════════════════════════════════════════════════════════
+
+Achieving CRAN acceptance requires more than passing \texttt{R CMD check}:
+packages must meet strict software-quality standards that safeguard user
+environments and ensure reproducibility across
+platforms~\cite{CRANPolicy2024,WRE2024}.
+During the pre-submission review process, \texttt{maxentcpp} underwent
+targeted improvements to satisfy these requirements, detailed below.
+
+\subsection*{Example documentation: \texttt{\textbackslash dontrun\{\}}
+to \texttt{\textbackslash donttest\{\}}}
+
+CRAN policy distinguishes between examples that \emph{cannot} execute
+(missing external software, API keys) and those that are merely slow or
+resource-intensive.
+The former require \texttt{\textbackslash dontrun\{\}}; the latter must
+use \texttt{\textbackslash donttest\{\}} so that CRAN's check
+infrastructure can optionally execute them with
+\texttt{-{}-run-donttest}~\cite{CRANcookbook2024}.
+All 36 example blocks in \texttt{maxentcpp} were originally wrapped in
+\texttt{\textbackslash dontrun\{\}}, which suppresses execution entirely
+and misleads users with a \texttt{\# Not run:} comment.
+These were migrated to \texttt{\textbackslash donttest\{\}}, converting
+the documentation examples into live, testable code that CRAN
+infrastructure can verify on every platform.
+
+\subsection*{Self-contained examples with synthetic data}
+
+Changing the wrapper from \texttt{\textbackslash dontrun\{\}} to
+\texttt{\textbackslash donttest\{\}} revealed a deeper issue: most
+examples referenced undefined objects (e.g., a pre-fitted model
+\texttt{m}, a grid \texttt{g1}, or a results data frame) that only
+existed in the context of a vignette narrative.
+Under \texttt{\textbackslash dontrun\{\}} this was invisible because
+the code was never evaluated; under \texttt{\textbackslash donttest\{\}}
+it caused immediate failures.
+
+Every example was rewritten to be self-contained, generating synthetic
+data at the point of use:
+
+\begin{verbatim}
+# Example: maxent_permutation_importance
+n   <- 50
+env <- data.frame(bio1 = runif(n, 10, 30),
+                  bio12 = runif(n, 500, 2500))
+f   <- maxent_generate_features(env, features = "lqh")
+fs  <- maxent_featured_space(f, sample(n, 10))
+m   <- maxent_fit(fs)
+maxent_permutation_importance(m, fs)
+\end{verbatim}
+
+This pattern---using \texttt{runif()}, \texttt{data.frame()}, and the
+package's own constructors (\texttt{maxent\_grid\_from\_matrix},
+\texttt{maxent\_featured\_space},
+\texttt{maxent\_fit})---ensures that each example runs in isolation
+without relying on objects from other functions or prior sessions.
+
+\subsection*{Graphics state restoration via \texttt{on.exit()}}
+
+CRAN requires that functions never leave the user's session in an
+altered state: any modifications to \texttt{par()}, \texttt{options()},
+or the working directory must be reverted, even if the function errors
+mid-execution~\cite{WRE2024}.
+The \texttt{maxent\_plot\_response\_curves()} function modified
+\texttt{par()} inside a loop to configure PNG output files but restored
+settings manually at the end of each iteration---a pattern that leaks
+state on error.
+
+The fix extracts device management into an internal helper,
+\texttt{.maxent\_safe\_png()}, that encapsulates the
+open-device~$\to$~set-par~$\to$~plot~$\to$~close-device lifecycle with
+guaranteed cleanup:
+
+\begin{verbatim}
+.maxent_safe_png <- function(file, width, height, expr) {
+  grDevices::png(file, width = width, height = height)
+  oldpar <- graphics::par(mar = c(4, 4, 2, 1))
+  on.exit({ graphics::par(oldpar); grDevices::dev.off() },
+          add = TRUE)
+  force(expr)
+}
+\end{verbatim}
+
+Because \texttt{on.exit()} is function-scoped, placing the cleanup
+inside a dedicated helper avoids the anti-pattern of accumulating or
+overwriting exit handlers within a loop.
+
+\subsection*{Optional dependency management}
+
+\texttt{maxentcpp} lists \texttt{terra} as a suggested (optional)
+dependency for raster I/O operations.
+CRAN checks may run with \texttt{\_R\_CHECK\_FORCE\_SUGGESTS\_=false},
+causing examples that assume \texttt{terra} is installed to fail.
+All terra-dependent examples are now guarded:
+
+\begin{verbatim}
+if (requireNamespace("terra", quietly = TRUE)) {
+  # example code using terra
+}
+\end{verbatim}
+
+This ensures graceful skipping when the optional dependency is
+unavailable, following CRAN's recommended pattern for structuring
+examples that depend on suggested packages~\cite{CRANcookbook2024}.
+
+\subsection*{Continuous integration}
+
+GitHub Actions workflows run \texttt{R CMD check -{}-as-cran} on Ubuntu
+(R~release and R-devel), macOS (R~release), and Windows (R~release),
+with the \texttt{-{}-run-donttest} flag enabled to exercise all example
+code.
+The CI matrix also includes a dedicated CRAN-preflight job that sets
+\texttt{\_R\_CHECK\_FORCE\_SUGGESTS\_=false} to simulate CRAN's
+minimal-dependency environment.
+
+% ══════════════════════════════════════════════════════════════════════════
 \section*{Research impact statement}
 % ══════════════════════════════════════════════════════════════════════════
 
