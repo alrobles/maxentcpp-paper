@@ -382,16 +382,17 @@ Legend: ✓ = implemented and tested; ◐ = partial or experimental;
 | Lambda file I/O | ✓ | ✓ | — |
 | Streaming raster projection | ✓ | — | — |
 | Bias grids | ✓ | ✓ | via `offset` |
-| Categorical variables | — | ✓ | ✓ |
-| Replicate runs / cross-validation | — | ✓ | via ENMeval |
-| Jackknife variable selection | — | ✓ | — |
-| Missing data handling | — | ✓ | ✓ |
+| Categorical variables | ✓ | ✓ | ✓ |
+| Replicate runs / cross-validation | ✓ | ✓ | via ENMeval |
+| Jackknife variable selection | ✓ | ✓ | — |
+| Missing data handling | ✓ | ✓ | ✓ |
 | SWD-to-raster projection | — | ✓ | — |
 
-Categorical variables, replicate runs, jackknife, and SWD-to-raster
-projection are not yet implemented. Users requiring these features should
-continue using Java Maxent or `maxnet`. We plan to add categorical
-variable support in a future release.
+Categorical variables, replicate runs, jackknife, missing-data handling,
+and background bias weighting are now implemented and tested.
+SWD-to-raster projection remains a workflow convenience not yet exposed
+through the public R API; users can still project models by loading
+environmental grids via `terra` and the package's grid conversion functions.
 
 ## Development provenance
 
@@ -582,11 +583,12 @@ environment.
 
 `maxentcpp` currently provides a numerically faithful implementation of
 the core continuous-predictor Maxent fitting and projection workflow for
-the implemented feature classes and output transformations. It is not yet
-a complete replacement for all Java Maxent workflows, because categorical
-predictors, replicate runs, jackknife diagnostics, missing-data handling,
-and SWD-to-raster projection are not implemented in the current release.
-For those features, users should continue using Java Maxent or `maxnet`.
+the implemented feature classes and output transformations. Recent releases
+add categorical predictors, replicate runs and cross-validation,
+jackknife diagnostics, and missing-data handling, closing most of the
+remaining gaps with Java Maxent 3.4.4 for the supported feature classes.
+SWD-to-raster projection remains a convenience workflow not yet exposed
+through the public R API.
 
 The package is distributed under the MIT license (compatible with
 Eigen's MPL2 and RcppEigen's GPL-2 via the "or later" clause), with
@@ -604,9 +606,9 @@ By providing a dependency-free, memory-efficient, and numerically faithful
 Maxent implementation, `maxentcpp` may lower the barrier for large-scale
 biodiversity assessments, climate-change projections, and conservation
 prioritization studies that rely on presence-only species distribution
-models, once the remaining Java Maxent workflow features --- especially
-categorical predictors and replicate diagnostics --- are implemented or
-clearly documented as out of scope.
+models. The recently added support for categorical predictors, replicate
+diagnostics, and missing-data handling brings the package closer to parity
+with Java Maxent 3.4.4 for the implemented feature classes.
 
 # AI usage disclosure
 
