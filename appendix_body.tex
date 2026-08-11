@@ -1,0 +1,479 @@
+\section{Purpose and scope}
+
+This appendix reports the benchmark suite run to (i) answer reviewer
+requests for quantitative performance evidence (fit time, projection
+time, peak memory, scaling with raster size and sample size), and (ii)
+locate the computational bottlenecks of \texttt{maxentcpp} 1.0.0 so
+that the package can be optimized without breaking its numerical
+fidelity contract with Java Maxent 3.4.4.
+
+Every number in this appendix was obtained by actually running the
+code on 11 August 2026.  No figure is copied from an earlier draft or
+from the literature.  The scripts that produced the numbers are listed
+in Section~\ref{sec:repro} together with their output files.
+
+\section{Hardware and software environment}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{ll}
+\toprule
+\textbf{Component} & \textbf{Value} \\
+\midrule
+CPU & Intel Core Ultra 7 165H (16 cores / 22 threads, up to 5.0 GHz, \\
+   & heterogeneous P-core + E-core design) \\
+RAM & 62 GiB \\
+OS & Ubuntu 24.04 \\
+R & 4.6.0 (2026-04-24) \\
+\texttt{maxentcpp} & 1.0.0 (installed from CRAN) \\
+\texttt{terra} & 1.7.65 \\
+\texttt{maxnet} & 0.1.4 \\
+Java & OpenJDK 21.0.11 \\
+\bottomrule
+\end{tabular}
+\caption{Benchmark environment.}
+\label{tab:env}
+\end{table}
+
+Because the CPU is a heterogeneous design (performance cores and
+efficiency cores sharing a package), wall-clock timings show run-to-run
+variability of roughly $\pm 5\%$.  All timings below are medians over
+at least three runs unless stated otherwise.
+
+\section{Methodology}
+
+\subsection{The in-place mutation artifact (critical)}
+
+\texttt{maxent\_fit()} \emph{mutates the \texttt{FeaturedSpace} object
+in place}.  The optimizer updates the feature lambdas stored inside the
+featured space and leaves them there when it returns.  Consequently,
+calling \texttt{maxent\_fit()} twice on the \emph{same} featured space
+does not measure two independent fits: the second call starts from the
+already-converged solution and terminates after only a handful of
+iterations (21 instead of 261 in our tests), producing a grossly
+optimistic timing.
+
+This artifact is the explanation for the ``$\sim$820\,ms'' figure that
+appeared in the v2 draft: it was measured by re-fitting a reused
+featured space.  All benchmarks in this appendix therefore create a
+\emph{fresh} featured space (and fresh feature objects) for every
+measured fit.  Section~\ref{sec:fit} shows the two numbers side by
+side so the difference is visible.
+
+\subsection{Warm-up}
+
+The first call to the Rcpp module in a fresh R process pays a one-time
+cost of roughly 5--19\,s (library load / symbol resolution / page
+faults).  Every benchmark below runs one or two warm-up fits first and
+excludes them from the reported timings.
+
+\subsection{Memory measurement}
+
+Peak resident set size (RSS) was measured with
+\texttt{/usr/bin/time -v} around a whole \texttt{Rscript} process that
+(a) performs a warm-up run, then (b) performs the measured fit and
+projection.  Both \texttt{maxentcpp} and \texttt{maxnet} scripts load
+the same libraries and data so the comparison is apples-to-apples.
+
+\subsection{Data}
+
+Two datasets were used:
+
+\begin{itemize}[leftmargin=1.2em]
+\item \textbf{Bundled \emph{Abeillia abeillei} dataset} (package
+  \texttt{extdata}): 73 presence records, 2,371 non-NA background
+  cells, two predictors (bio1 = annual mean temperature, bio12 =
+  annual precipitation, Central America), linear + quadratic + hinge
+  features, 44 features total, \texttt{max\_iter = 500},
+  \texttt{convergence = 1e-5}.
+\item \textbf{Synthetic grids} (for scaling and the 1.0.0 diagnostics):
+  2,371 / 23,000 / 233,000 cells with two continuous predictors (plus
+  one five-level categorical for the diagnostics), Gaussian niches for
+  presence sampling.
+\end{itemize}
+
+\section{Measured results}
+
+\subsection{Fit time (Abeillia dataset)}
+\label{sec:fit}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lcc}
+\toprule
+\textbf{Measurement} & \textbf{maxentcpp} & \textbf{maxnet} \\
+\midrule
+Fresh-state fit, median of 4 runs & 18.40 / 18.80 / 18.88 / 18.44 s & --- \\
+Fresh-state fit, median & $\sim$18.5 s & --- \\
+Warm fit, median of 3 runs & $\sim$0.25 s & $\sim$0.25 s \\
+Iterations to convergence (fresh) & 261 & --- \\
+End-to-end \texttt{maxent\_run()} (fit+eval+diag), median of 3 & 32.3 s & --- \\
+\bottomrule
+\end{tabular}
+\caption{Fit time on the bundled \emph{Abeillia abeillei} dataset.
+The ``warm fit'' row for maxentcpp reuses a converged featured space and
+is shown only to demonstrate the in-place artifact; it is not a valid
+per-fit cost.}
+\label{tab:fit}
+\end{table}
+
+The fresh-state fit converges in 261 iterations.  The end-to-end
+\texttt{maxent\_run()} adds evaluation (AUC), percent contribution,
+permutation importance, and CSV output; each of those stages costs
+2--3\,ms, so the optimizer itself accounts for more than 99\% of the
+wall time (Section~\ref{sec:breakdown}).
+
+\subsection{Time breakdown}
+\label{sec:breakdown}
+
+A step-by-step trace of \texttt{maxent\_run()} on the Abeillia dataset
+(2,371 cells, 73 presences, 44 features):
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lc}
+\toprule
+\textbf{Stage} & \textbf{Wall time} \\
+\midrule
+Grid info + dimension & $<$1 ms \\
+Read occurrences & 1 ms \\
+Background indices (n = 10,000) & 1 ms \\
+Extract env values + complete cases & 3 ms \\
+Generate features (44) & $<$1 ms \\
+\textbf{Featured space + fit (261 iters)} & \textbf{18,053 ms} \\
+Evaluate (pres + bg predictions, AUC) & 3 ms \\
+Percent contribution & 2 ms \\
+Permutation importance & 3 ms \\
+\bottomrule
+\end{tabular}
+\caption{Stage-by-stage breakdown of \texttt{maxent\_run()}.  The fit
+dominates: 18,053 ms of 18,060 ms total.}
+\label{tab:breakdown}
+\end{table}
+
+This is the single most important result for optimization: \textbf{any
+speedup of the sequential optimizer translates almost 1:1 into
+end-to-end speedup}; speeding up every other stage combined cannot
+save more than $\sim$1\%.
+
+\subsection{Peak memory (RSS)}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lcc}
+\toprule
+\textbf{Workflow} & \textbf{Peak RSS} \\
+\midrule
+\texttt{maxentcpp} \texttt{maxent\_run()} + full-raster projection & 158 MB (162,076 KB) \\
+\texttt{maxnet} fit + predict (same data) & 358 MB (366,176 KB) \\
+\bottomrule
+\end{tabular}
+\caption{Peak resident set size measured with \texttt{/usr/bin/time -v}
+on the same 2,371-cell dataset, warm-up excluded.  \texttt{maxentcpp}
+uses $\sim$2.3$\times$ less peak memory.}
+\label{tab:mem}
+\end{table}
+
+The memory advantage is real and already quantified.  It comes from
+streaming evaluation (tiles are scored and discarded) and from not
+materializing the full prediction matrix.  Optimization work should
+\emph{preserve} this property.
+
+\subsection{Projection time}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lcc}
+\toprule
+\textbf{Grid} & \textbf{maxentcpp} & \textbf{maxnet} \\
+\midrule
+23,000 cells & 21 ms & 9 ms \\
+Full raster, 6,930 cells (incl.\ NODATA) & 3 ms & --- \\
+\bottomrule
+\end{tabular}
+\caption{Projection time.  Both implementations are trivial at these
+scales; the streaming advantage only matters for rasters larger than
+RAM (future work on this hardware).}
+\label{tab:proj}
+\end{table}
+
+\subsection{Scaling with sample size}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lcc}
+\toprule
+\textbf{Cells} & \textbf{maxentcpp fresh fit} & \textbf{Notes} \\
+\midrule
+2,371 & $\sim$18.1--19.6 s & converges in 261 iters \\
+23,000 & $\sim$129 s & exhausts 500-iteration budget \\
+233,000 & not run & exceeds per-session budget \\
+\bottomrule
+\end{tabular}
+\caption{Scaling of fresh-state fit time with raster size.  The 23K run
+uses signal-strong synthetic data that exhausts \texttt{max\_iter};
+real-world data converges earlier.}
+\label{tab:scale}
+\end{table}
+
+The 23K / 2,371 time ratio is $\sim$7$\times$ for $\sim$9.7$\times$
+more cells, i.e.\ roughly linear in the number of cells (the
+sub-linear ratio is explained by the two runs converging in different
+numbers of iterations).  Per-iteration cost scales linearly with the
+number of points, as expected from the hot loops described in
+Section~\ref{sec:hotpaths}.
+
+\subsection{1.0.0 diagnostics suite}
+
+Benchmarked on a synthetic grid of 2,371 cells, 100 presence records,
+two continuous predictors plus one five-level categorical variable,
+lqh features, \texttt{max\_iter = 500}, fresh state per fit:
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lc}
+\toprule
+\textbf{Diagnostic} & \textbf{Wall time} \\
+\midrule
+Single fit (continuous only) & $\sim$22 s \\
+Fit with categorical predictor & $\sim$18 s \\
+Jackknife (3 variables; 6 fits) & $\sim$63 s \\
+Cross-validation ($k = 5$; 5 fits) & $\sim$135 s \\
+Replicate runs (bootstrap, $n = 5$; 5 fits) & $\sim$102 s \\
+\bottomrule
+\end{tabular}
+\caption{1.0.0 diagnostics.  Each diagnostic is a small multiple of a
+single fit, as expected.  The previously published ``$\sim$1 ms /
+$\sim$94 ms'' figures were in-place-mutation artifacts.}
+\label{tab:diag}
+\end{table}
+
+\subsection{Expanded virtual-species simulation}
+
+48 models: 2 predictor-correlation structures ($\rho = 0, 0.8$)
+$\times$ 4 Gaussian virtual species (narrow/wide $\times$
+centered/offset) $\times$ 2 sample sizes (100, 400) $\times$ 3
+replicates.  Every model compared against its true suitability surface
+and against the other package.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lc}
+\toprule
+\textbf{Quantity} & \textbf{Value} \\
+\midrule
+Agreement between packages ($r$), median & 0.98 (min 0.95 across all 48 cells) \\
+$r$ maxentcpp vs true, median & 0.88 \\
+$r$ maxnet vs true, median & 0.94 \\
+Mean $|\Delta\text{cloglog}|$, median & 0.044 \\
+Correlation effect on agreement ($\rho=0$ vs $\rho=0.8$) & 0.985 vs 0.973 \\
+maxentcpp fit, median & 34.8 s \\
+maxnet fit, median & 0.94 s \\
+maxentcpp iterations, median & 141 \\
+\bottomrule
+\end{tabular}
+\caption{Simulation summary.  The statistical results justify the
+equivalence claims in the paper; the timing rows quantify the
+performance gap on synthetic Gaussian niches.}
+\label{tab:sim}
+\end{table}
+
+\subsection{Java Maxent prediction agreement}
+
+Direct prediction comparison between Java Maxent 3.4.4
+(\texttt{MaxentJavaRunner.trainLinear2Var} harness) and
+\texttt{maxentcpp} on identical data (2,100 cells, 100 presences,
+linear features, \texttt{max\_iter = 500}, \texttt{convergence =
+1e-5}, \texttt{beta = 1.0}, \texttt{min\_deviation = 0.001}):
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lc}
+\toprule
+\textbf{Metric} & \textbf{Value} \\
+\midrule
+Pearson $r$ & 1.000000 \\
+Spearman $\rho$ & 1.000000 \\
+RMSE & $9.18 \times 10^{-18}$ \\
+Mean $|\Delta\text{cloglog}|$ & $4.15 \times 10^{-18}$ \\
+Max $|\Delta\text{cloglog}|$ & $8.76 \times 10^{-17}$ \\
+AUC (both) & 0.903525 \\
+\bottomrule
+\end{tabular}
+\caption{Java vs C++ prediction agreement --- machine precision.}
+\label{tab:java}
+\end{table}
+
+\section{Hot paths in the optimizer}
+\label{sec:hotpaths}
+
+The sequential optimizer lives in
+\texttt{src/cpp/include/maxent/sequential.hpp} (class
+\texttt{Sequential}, mirroring Java \texttt{density.Sequential}).
+The measured numbers (261 iterations, $\sim$18.1\,s, 2,371 points, 44
+features) imply a per-iteration cost of
+\[
+18.1\text{ s} / 261 \approx 69\text{ ms/iteration}.
+\]
+Three loops dominate that budget:
+
+\begin{enumerate}[leftmargin=1.2em]
+\item \textbf{\texttt{get\_best\_feature()} --- feature selection.}
+  Every non-parallel iteration scans all $J = 44$ features and calls
+  \texttt{delta\_loss\_bound(j)} for each.  Each bound is $O(n)$ in
+  the number of points $n = 2{,}444$, so this step is
+  $O(n \times J)$ per iteration.  With 261 iterations this is the
+  dominant cost.
+\item \textbf{\texttt{search\_alpha()} / \texttt{new\_loss\_change()}
+  --- step-size search.}  After selecting a feature, the optimizer
+  computes a Newton step and then searches for a better step size by
+  repeatedly calling \texttt{new\_loss\_change(j, alpha)}, each call
+  looping over all $n$ points with a \texttt{std::exp()} per point.
+  The quadrupling loop can evaluate this several times per update.
+\item \textbf{\texttt{do\_parallel\_update()} --- every 10 iterations.}
+  Computes the Hessian-vector product and gradient over all $n$
+  points for the subset of features scheduled for update
+  ($O(n \times n_{\text{update}})$).
+\end{enumerate}
+
+All three loops are single-threaded by design: the optimizer must
+preserve Java Maxent's exact iteration order for the fidelity
+contract (\texttt{maxentcppCompTest} compares per-iteration loss,
+entropy, and $\lambda$ trajectories).  Any optimization must therefore
+preserve bit-comparable results under the deterministic settings, or
+be gated behind an opt-in flag with the fidelity suite re-run.
+
+\section{Optimization opportunities (for the developer)}
+
+The following directions are ordered by expected impact.  They are
+\emph{suggestions grounded in the measured hot paths above}, not
+already-verified changes; each must be validated against
+\texttt{maxentcppCompTest} and the benchmark scripts.
+
+\subsection{High impact}
+
+\begin{enumerate}[leftmargin=1.2em]
+\item \textbf{Vectorize the $O(n)$ loops with Eigen.}
+  \texttt{new\_loss\_change()} and \texttt{delta\_loss\_bound()}
+  currently loop over points with scalar \texttt{std::exp()} calls.
+  \texttt{std::exp()} on a vectorized Eigen array is
+  $\sim$4--8$\times$ faster on modern x86 (the hardware has AVX2).
+  The package already depends on Eigen (used for the feature matrix
+  and streaming provider), so this is a pure implementation change
+  with no algorithm change.
+\item \textbf{Avoid recomputing per-feature statistics.}
+  \texttt{get\_best\_feature()} recomputes \texttt{delta\_loss\_bound}
+  for \emph{all} features every iteration, even though only the
+  selected feature's lambda changed.  Caching per-feature bounds and
+  updating only the affected entries would reduce the selection scan
+  from $O(n \times J)$ to $O(n \times k)$ where $k \ll J$ is the
+  number of recently changed features.  The Java code has a
+  \texttt{featuresToUpdate} notion; the C++ port already computes
+  \texttt{state\_[j].last\_change} --- the cache can key on that.
+\item \textbf{Reduce \texttt{search\_alpha} evaluations.}
+  The quadrupling loop calls \texttt{new\_loss\_change} (an $O(n)$
+  pass with one \texttt{exp} per point) until the loss stops
+  improving.  A golden-section or analytic bound on the quadratic
+  would cut the number of passes, or the exp computations of
+  successive trials could be reused (they differ only by the step
+  multiplier).
+\end{enumerate}
+
+\subsection{Medium impact}
+
+\begin{enumerate}[leftmargin=1.2em]
+\item \textbf{Parallelize across independent fits.}  Replicate runs,
+  cross-validation folds, and jackknife leave-one-out fits are
+  independent by construction.  The paper already states parallelism
+  is applied ``across independent fits''; making it real with
+  OpenMP/threads (or documented \texttt{future} support) would turn
+  the 63--135\,s diagnostics into 63/cores--135/cores seconds with
+  zero fidelity risk, because each fit is bit-identical to the
+  serial one.
+\item \textbf{Compile flags.}  Verify the package builds with
+  \texttt{-O3} and, where CRAN permits, \texttt{-march=native} on
+  Linux; profile-guided optimization for the hot loops.  (CRAN's
+  policy restricts \texttt{-march} on CRAN builds; the effect can be
+  delivered to users via a documented \texttt{Makevars} override
+  without changing the default.)
+\item \textbf{Reduce \texttt{std::exp} precision where safe.}
+  \texttt{new\_loss\_change} accumulates \texttt{exp(alpha *
+  F(i,j))}.  If the fidelity suite confirms the summation order is
+  the only sensitive part, an opt-in \texttt{-ffast-math}-style fast
+  exp (or \texttt{expf} with double accumulation) could be gated
+  behind an option, but this is risky and must be off by default.
+\end{enumerate}
+
+\subsection{Low impact / do not touch}
+
+\begin{enumerate}[leftmargin=1.2em]
+\item \textbf{Streaming projection.} Already 21\,ms at 23K cells and
+  memory-efficient; there is nothing to gain at these scales.
+\item \textbf{Feature generation.} Measured at $<$1\,ms; not a
+  bottleneck.
+\item \textbf{The fidelity contract.} The per-iteration trajectory
+  tests are the package's core value proposition; never change the
+  default algorithm path in a way that alters iteration order or
+  numerical results.
+\end{enumerate}
+
+\section{Reproducibility}
+\label{sec:repro}
+
+All scripts and raw outputs used for this appendix are kept under
+\texttt{/tmp/javabench/} on the benchmark machine (Gamma):
+
+\begin{itemize}[leftmargin=1.2em]
+\item \texttt{fresh\_test.R} --- fresh-state fit timings (4 runs,
+  261 iterations each)
+\item \texttt{desglose2.R} / \texttt{run\_trace.R} --- stage-by-stage
+  breakdown of \texttt{maxent\_run()}
+\item \texttt{mem\_maxentcpp.R} / \texttt{mem\_maxnet.R} --- RSS under
+  \texttt{/usr/bin/time -v} (outputs \texttt{mem\_cpp.txt},
+  \texttt{mem\_mn.txt})
+\item \texttt{diag\_bench.R} --- 1.0.0 diagnostics timings
+  (output \texttt{diag\_bench\_out.txt})
+\item \texttt{sim\_major3.R} --- expanded simulation (48 cells;
+  outputs \texttt{sim\_major3.csv}, \texttt{sim\_major3.rds})
+\item \texttt{sim\_figure.R} --- \texttt{figures/simulation\_summary.png}
+\item \texttt{compare\_java\_cpp.R} --- Java vs C++ prediction
+  comparison (output \texttt{comparison.rds},
+  \texttt{figures/java\_vs\_cpp\_predictions.png})
+\item \texttt{appendix\_timing.R} --- clean end-to-end
+  \texttt{maxent\_run()} timing (output
+  \texttt{appendix\_timing\_out.txt})
+\end{itemize}
+
+To re-run a single measurement, copy the script to a machine with
+\texttt{maxentcpp} 1.0.0 installed and execute
+\texttt{Rscript <script>.R}.  The simulation requires 4 cores for
+\emph{mclapply}; all other scripts are single-process.
+
+\section{Summary for the optimization task}
+
+\begin{itemize}[leftmargin=1.2em]
+\item The optimizer is $>$99\% of runtime.  Optimize
+  \texttt{sequential.hpp} only.
+\item Target: reduce the $\sim$69\,ms/iteration on 2,371 points /
+  44 features.  The three hot loops are feature selection
+  ($O(nJ)$), step-size search ($O(n)$ with multiple
+  \texttt{exp()} passes), and the periodic parallel update.
+\item The fastest safe wins: Eigen-vectorized \texttt{exp} loops and
+  caching of \texttt{delta\_loss\_bound} between iterations.
+\item Parallelism across independent fits (replicates / CV /
+  jackknife) is free of fidelity risk.
+\item Keep peak RSS at or below $\sim$158\,MB on this dataset --- it
+  is currently a 2.3$\times$ advantage over \texttt{maxnet}.
+\item After any change, re-run \texttt{maxentcppCompTest} and the
+  scripts above; the fidelity suite is the gate.
+\end{itemize}
+

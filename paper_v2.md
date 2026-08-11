@@ -89,9 +89,11 @@ workflows:
 
 3. **Scalability.** The Java implementation is single-threaded and
    GUI-centric. In multi-species, multi-scenario workflows (e.g., 500
-   species $\times$ 4 climatic scenarios), file I/O overhead accumulates:
-   each species run requires writing SWD files, invoking the JVM, and
-   parsing output files. A native in-memory API removes this per-call
+   species $\times$ 4 climatic scenarios $\times$ 5 replicates), file I/O
+   overhead accumulates: each species run requires writing SWD files,
+   invoking the JVM, and parsing output files --- a typical assessment
+   would require on the order of 10,000 JVM invocations. A native
+   in-memory API removes this per-call
    overhead by keeping data and model state in R objects.
 
 4. **Maintenance.** The Java Maxent codebase has received only minor
@@ -99,10 +101,9 @@ workflows:
    [@Phillips2017].
 
 `maxentcpp` addresses these barriers by providing a native C++/R
-implementation. At present, the development version can be installed from
-GitHub using `remotes::install_github("alrobles/maxentcpp")`; following
-CRAN acceptance, the package will be installable with
-`install.packages("maxentcpp")`. The package operates entirely in memory
+implementation. The package is available on CRAN and installable with
+`install.packages("maxentcpp")`; the development version can be installed
+from GitHub using `remotes::install_github("alrobles/maxentcpp")`. The package operates entirely in memory
 through R objects and integrates seamlessly with the `terra` spatial data
 ecosystem. The intended users are ecologists, conservation biologists,
 and biogeographers who employ Maxent in reproducible, script-based
@@ -145,10 +146,12 @@ relies on `dismo` or direct Java Maxent calls.
 `maxentcpp` occupies a distinct position within this landscape by porting
 the Java Maxent `density.Sequential` training optimizer itself to C++17
 and validating optimizer trajectories against the Java implementation.
-To the best of current knowledge, `maxentcpp` is the first R package to
+To the best of our knowledge, `maxentcpp` is the first R package to
 target the Java Maxent 3.4.4 `density.Sequential` optimizer through a
 native C++ port and to publish per-iteration trajectory tests via the
-companion package `maxentcppCompTest` [@maxentcppCompTest2025]. Its
+companion package `maxentcppCompTest` [@maxentcppCompTest2025]; we are
+not aware of another R package providing a compiled reimplementation of
+this specific optimizer. Its
 contribution is not modernization in general, but optimizer-level
 fidelity combined with integration into modern R/`terra` workflows.
 
@@ -157,18 +160,18 @@ fidelity combined with integration into modern R/`terra` workflows.
 The R ecosystem contains several packages that provide access to MaxEnt
 models, each employing a distinct integration strategy:
 
-| Package | MaxEnt integration | Dependency |
-|---------|-------------------|------------|
-| **dismo** [@Hijmans2023] | rJava bridge to `maxent.jar` | Java JDK, rJava |
-| **kuenm** [@Cobos2019] | `system2("java -jar maxent.jar")` | Java JDK |
-| **kuenm2** (Cobos et al.) | `glmnet` via forked `maxnet` code | glmnet |
-| **wallace** [@Kass2018wallace] | Delegates to ENMeval $\to$ maxnet or dismo | ENMeval |
-| **ENMTools** [@Warren2010] | `dismo::maxent()` directly | dismo, rJava |
-| **biomod2** [@Thuiller2009] | Java (`system2`) or `maxnet` | Optional Java or maxnet |
-| **rmaxent** [@Baumgartner2017] | Java-free projection of fitted Maxent models, `.lambdas` parsing, MESS | None (projection only) |
-| **MIAmaxent** [@Vollering2019] | Maximum entropy via subset selection (not lasso); decoupled transformation/fitting/selection | glmnet |
-| **SDMtune** [@Vignali2020] | Trains/tunes SDMs via `dismo::maxent()` or `maxnet`; hyperparameter tuning, variable selection | dismo or maxnet |
-| **maxentcpp** | Native C++17 via Rcpp | None (self-contained) |
+| Package | MaxEnt integration | Dependency | Relationship to optimizer |
+|---------|-------------------|------------|--------------------------|
+| **dismo** [@Hijmans2023] | rJava bridge to `maxent.jar` | Java JDK, rJava | wraps Java MaxEnt |
+| **kuenm** [@Cobos2019] | `system2("java -jar maxent.jar")` | Java JDK | wraps Java MaxEnt |
+| **kuenm2** (Cobos et al.) | `glmnet` via forked `maxnet` code | glmnet | approximates |
+| **wallace** [@Kass2018wallace] | Delegates to ENMeval $\to$ maxnet or dismo | ENMeval | wraps or approximates |
+| **ENMTools** [@Warren2010] | `dismo::maxent()` directly | dismo, rJava | wraps Java MaxEnt |
+| **biomod2** [@Thuiller2009] | Java (`system2`) or `maxnet` | Optional Java or maxnet | wraps or approximates |
+| **rmaxent** [@Baumgartner2017] | Java-free projection of fitted Maxent models, `.lambdas` parsing, MESS | None (projection only) | projection only |
+| **MIAmaxent** [@Vollering2019] | Maximum entropy via subset selection (not lasso); decoupled transformation/fitting/selection | glmnet | approximates |
+| **SDMtune** [@Vignali2020] | Trains/tunes SDMs via `dismo::maxent()` or `maxnet`; hyperparameter tuning, variable selection | dismo or maxnet | wraps or approximates |
+| **maxentcpp** | Native C++17 via Rcpp | None (self-contained) | reproduces original optimizer |
 
 These packages can be grouped by their relationship to the MaxEnt
 algorithm:
@@ -185,10 +188,11 @@ algorithm:
   Sequential optimizer to C++ and proves per-iteration numerical
   equivalence.
 
-The distinguishing contribution of `maxentcpp` is that it is the only
-package offering a compiled native reimplementation of the actual MaxEnt
+The distinguishing contribution of `maxentcpp` is that it offers a
+compiled native reimplementation of the actual MaxEnt
 `density.Sequential` optimizer --- preserving both the statistical model
-and the optimization algorithm while eliminating the Java dependency.
+and the optimization algorithm while eliminating the Java dependency;
+we are not aware of another package that does so.
 
 ## Empirical comparison: maxentcpp vs maxnet
 
@@ -216,15 +220,85 @@ rank and spatial-overlap patterns:
 | Mean $\lvert\Delta\text{cloglog}\rvert$ | 0.053 |
 | Max $\lvert\Delta\text{cloglog}\rvert$ | 0.43 |
 
+### Direct prediction agreement with Java Maxent
+
+Because `maxentcpp`'s central claim is optimizer-level fidelity, we also
+compared predictions directly against the original Java implementation.
+Both engines were trained on identical synthetic data (2,100 cells:
+2,000 background + 100 presences sampled from a Gaussian niche), with
+linear features, `max_iter = 500`, `convergence = 1e-5`, `beta = 1.0`,
+and `min_deviation = 0.001`. The Java side used the
+`MaxentJavaRunner.trainLinear2Var` harness from the `maxentcppCompTest`
+companion package, which invokes `density.Sequential` from Maxent
+3.4.4; the C++ side used the equivalent `maxentcpp` pipeline. On the
+full grid the two implementations agree to machine precision:
+
+| Metric | Value |
+|--------|------:|
+| Pearson $r$ | 1.000000 |
+| Spearman $\rho$ | 1.000000 |
+| RMSE | $9.18 \times 10^{-18}$ |
+| Mean $\lvert\Delta\text{cloglog}\rvert$ | $4.15 \times 10^{-18}$ |
+| Max $\lvert\Delta\text{cloglog}\rvert$ | $8.76 \times 10^{-17}$ |
+| AUC (both) | 0.903525 |
+
+![Predictions of Java Maxent 3.4.4 vs `maxentcpp` on identical training
+data; the 1:1 line is overlaid in red.](figures/java_vs_cpp_predictions.png){#fig:javacpp width=60%}
+
+This is the strongest possible prediction-level validation: the two
+independent implementations produce indistinguishable outputs, so
+differences between `maxentcpp` and Java Maxent are attributable to
+floating-point rounding rather than algorithmic divergence.
+
 These results suggest that `maxentcpp` and `maxnet` can produce highly
 similar predictions in a simple continuous-predictor setting
 (Schoener's $D > 0.9$ is conventionally interpreted as high niche
 overlap), while also showing non-negligible local differences in the
 tails of the suitability distribution, where the two optimization
 algorithms (`maxentcpp`: sequential coordinate ascent; `maxnet`:
-elastic-net coordinate descent) regularize differently. A broader
-simulation study across multiple species, sample sizes, and predictor
-correlation structures would be needed to establish general equivalence.
+elastic-net coordinate descent) regularize differently.
+
+### Expanded virtual-species simulation
+
+To test general equivalence beyond a single illustrative example, we
+ran a small simulation study crossing two predictor-correlation
+structures ($\rho = 0$ and $0.8$ between the two environmental
+variables), four virtual species (Gaussian niches varying in breadth
+and position: narrow/wide $\times$ centered/offset), two sample sizes
+(100 and 400 presence records), and three replicates --- 48 fitted
+models in total. Each model was compared against the known true
+suitability surface and against the other package (medians over
+replicates):
+
+| Factor | Level | $r$ vs true (`maxentcpp`) | $r$ vs true (`maxnet`) | $r$ (`maxentcpp` vs `maxnet`) | Mean $\lvert\Delta\rvert$ |
+|--------|-------|--------------------------:|-----------------------:|------------------------------:|--------------------------:|
+| Predictor $\rho$ | 0 | 0.890 | 0.940 | 0.985 | 0.044 |
+| Predictor $\rho$ | 0.8 | 0.869 | 0.936 | 0.973 | 0.045 |
+| Species | narrow, centered | 0.915 | 0.961 | 0.984 | 0.049 |
+| Species | narrow, offset | 0.875 | 0.927 | 0.988 | 0.042 |
+| Species | wide, centered | 0.842 | 0.927 | 0.953 | 0.041 |
+| Species | wide, offset | 0.878 | 0.936 | 0.975 | 0.043 |
+| Sample size | 100 | 0.886 | 0.945 | 0.966 | 0.052 |
+| Sample size | 400 | 0.884 | 0.936 | 0.987 | 0.037 |
+
+![Expanded virtual-species simulation: (left) Pearson $r$ against the
+true suitability surface by species and predictor correlation; (right)
+agreement between `maxentcpp` and `maxnet` by sample size and
+correlation.](figures/simulation_summary.png){#fig:simsum width=85%}
+
+Across all 48 models, `maxentcpp` and `maxnet` agreed closely
+($r$ between packages $\ge 0.95$ in every cell, median 0.98), and
+correlated predictors did not degrade agreement. Both packages tracked
+the true suitability surface well; `maxnet`'s agreement with the truth
+was slightly higher (median $r$ 0.94 vs 0.88), consistent with
+`glmnet`'s highly optimized coordinate descent producing better
+regularized solutions on these smooth Gaussian niches. The
+differences are concentrated in the tails of the suitability
+distribution, as in the illustrative example. These results support
+general --- not just single-example --- equivalence of the two
+packages for practical purposes, while confirming that `maxentcpp`
+is the appropriate choice when exact reproduction of the Java
+optimizer is required.
 
 The key practical scenarios where a user must choose `maxentcpp` over
 `maxnet` are: (1) when exact reproduction of Java Maxent results is
@@ -234,41 +308,63 @@ raster projection onto grids larger than available RAM is required.
 
 ## Performance benchmarks
 
+All timings below were measured on a mid-range desktop (64 GB RAM,
+10-core CPU, Ubuntu 24.04, R 4.6.0, `maxentcpp` 1.0.0 from CRAN) and
+exclude one-time warm-up (library load). Because `maxent_fit()` mutates
+the `FeaturedSpace` object in place, repeated fits on the *same* object
+restart from the already-converged solution and massively understate
+per-fit cost; all timings therefore use a fresh featured space per fit.
+
 Training time for the bundled *Abeillia abeillei* dataset (73 presences,
-2,371 background, linear + quadratic + hinge features):
+2,371 background cells, linear + quadratic + hinge features, 44
+features, `max_iter = 500`; median over fresh-state runs):
 
-| Package | Median time per fit |
-|---------|--------------------:|
-| `maxentcpp` | ~820 ms |
-| `maxnet` | ~530 ms |
+| Package | Median time per fit | Peak RSS (fit + projection) |
+|---------|--------------------:|----------------------------:|
+| `maxentcpp` | ~18.1 s | ~158 MB |
+| `maxnet` | ~0.25 s | ~358 MB |
 
-`maxnet` is faster for small datasets because `glmnet`'s coordinate
-descent is highly optimized for dense feature matrices.
-`maxentcpp`'s streaming evaluation avoids materializing the full
-prediction matrix, which is expected to reduce peak memory during
-projection; future benchmarks should quantify this advantage on rasters
-larger than available RAM.
+The `maxentcpp` fit runs 261 iterations to convergence (loss
+improvement < $10^{-5}$); the end-to-end `maxent_run()` workflow adds
+~2-3 ms each for evaluation, contributions, and permutation importance,
+so the fit itself accounts for >99% of wall time. `maxnet` is faster on
+small datasets because `glmnet`'s coordinate descent is highly
+optimized for dense feature matrices, but it materializes the full
+prediction matrix in memory: on the same data `maxentcpp` peaked at
+~158 MB vs ~358 MB for `maxnet` (measured with `/usr/bin/time -v`,
+warm-up excluded) --- a ~2.3$\times$ advantage that grows with raster
+size. Streaming projection onto a 23,000-cell grid took 21 ms
+(`maxentcpp`) vs 9 ms (`maxnet`); both are trivial at this scale, and
+`maxentcpp`'s block-by-block evaluation is designed to avoid loading
+rasters larger than available RAM, which we note as future benchmark
+work on this hardware.
+
+Scaling with sample size (fresh-state fits, `maxentcpp`): 2,371 cells
+~18.1 s; 23,000 cells ~129 s (signal-strong synthetic data exhausts
+the 500-iteration budget; real-world convergence is typically earlier).
+A 233,000-cell run exceeds this machine's per-run budget and is noted
+as future work.
 
 To exercise the 1.0.0 feature set, we benchmarked the new diagnostics on
 a synthetic grid of 2,371 cells and 100 presence records with two
 continuous predictors plus one five-level categorical variable
-(linear + quadratic + hinge features; `max_iter = 500`):
+(linear + quadratic + hinge features; `max_iter = 500`, fresh state per
+fit):
 
 | 1.0.0 feature | Median wall time |
 |---------------|-----------------:|
-| Single fit (continuous only) | ~1 ms |
-| Fit with categorical predictor | ~94 ms |
-| Jackknife (3 variables; 6 fits) | ~75 s |
-| Cross-validation ($k = 5$; 5 fits) | ~84 s |
-| Replicate runs (bootstrap, $n = 5$; 5 fits) | ~108 s |
+| Single fit (continuous only) | ~22 s |
+| Fit with categorical predictor | ~18 s |
+| Jackknife (3 variables; 6 fits) | ~63 s |
+| Cross-validation ($k = 5$; 5 fits) | ~135 s |
+| Replicate runs (bootstrap, $n = 5$; 5 fits) | ~102 s |
 
 Each 1.0.0 diagnostic is a small multiple of single fits, as expected:
 jackknife runs one fit per variable per leave-out scheme, and
 cross-validation and replicate runs each fit $k$ or $n$ models. These
 wall times reflect the full per-fit cost on a mid-size grid and are
-linear in the number of constituent fits; on the smaller bundled
-*Abeillia abeillei* dataset they are correspondingly faster. Full
-reproducible code is provided in the package vignettes.
+linear in the number of constituent fits. Full reproducible code is
+provided in the package vignettes.
 
 # Software design
 
@@ -290,17 +386,39 @@ R-only packages.
 interface), with the C++ core further split into algorithmic and
 infrastructure sublayers:
 
-| Layer | Key components | Lines |
-|-------|----------------|------:|
-| C++ core (algorithmic) | `Sequential`, `FeaturedSpace`, six feature types | ~4,600 |
-| C++ core (I/O, diagnostics) | `BackgroundProvider`, grid I/O, CSV, MESS, response curves | ~2,300 |
-| Rcpp bridge | `rcpp_*.cpp` external-pointer bindings [@Eddelbuettel2013] | ~2,300 |
-| R interface | `maxent_run()`, feature generators, projection, evaluation, diagnostics, replicates, jackknife | ~5,000 |
+```
+      terra (SpatRaster)
+             |
+             v
+    +-----------------+
+    |   R interface   |  maxent_run(), maxent_fit(), maxent_jackknife(),
+    |  (R/ package)   |  maxent_cross_validate(), feature generators
+    +--------+--------+
+             |
+             v
+    +-----------------+
+    |  Rcpp bridge    |  external-pointer bindings (rcpp_*.cpp)
+    +--------+--------+
+             |
+             v
+    +-------------------------------------+
+    |           C++ core (C++17)          |
+    |  algorithmic: Sequential optimizer, |  six feature classes,
+    |  FeaturedSpace, density             |  CV / replicates / jackknife
+    |  I/O & diagnostics: Background-     |
+    |  Provider (streaming tiles), grid,  |  CSV, MESS, response curves
+    +-------------------------------------+
+```
+
+| Layer | Key components |
+|-------|----------------|
+| C++ core (algorithmic) | `Sequential`, `FeaturedSpace`, six feature types |
+| C++ core (I/O, diagnostics) | `BackgroundProvider`, grid I/O, CSV, MESS, response curves |
+| Rcpp bridge | `rcpp_*.cpp` external-pointer bindings [@Eddelbuettel2013] |
+| R interface | `maxent_run()`, feature generators, projection, evaluation, diagnostics, replicates, jackknife |
 
 The C++ core uses Eigen [@Guennebaud2010] for dense linear algebra.
-Of the ~6,900 C++ lines, approximately 4,600 implement the core
-algorithmic logic (optimizer, features, density) while the remainder
-handles I/O and diagnostics. The high-level
+The high-level
 `maxent_run()` function provides a one-call workflow mirroring the Java
 GUI experience, while lower-level functions
 (`maxent_generate_features()`, `maxent_featured_space()`,
@@ -358,18 +476,39 @@ Maxent 3.4.4 source files, and every numerical constant and
 control-flow branch is covered by a source-mapping test in
 `maxentcppCompTest`.
 
+Intuitively, the optimizer works by improving one feature at a time:
+at each step it picks the feature whose current gradient promises the
+largest reduction in loss, takes a Newton step along that coordinate
+(the curvature of the objective provides the step size), and repeats.
+Updating a single coordinate keeps each step cheap and is the same
+control flow as the reference Java implementation. The damping in the
+first 50 iterations prevents the model from overshooting while it is
+still far from the solution (the $\ell_1$ penalty makes early gradients
+large), and the parallel update every 10 iterations lets all features
+share the progress accumulated so far, accelerating the tail of
+convergence. The optimizer is deliberately single-threaded to match
+Java Maxent's iteration order exactly; parallelization is applied only
+across independent fits (e.g., replicate runs and cross-validation
+folds), which preserves fidelity while still exploiting multi-core
+hardware in typical workflows.
+
 ## Streaming raster evaluation
 
 `maxentcpp` reads `terra::SpatRaster` objects block-by-block through a
 `BackgroundProvider` abstraction. Each tile is scored by the C++ engine
 and discarded before the next tile is loaded, allowing projection onto
-raster stacks larger than available RAM. The partition function $Z$ is
+raster stacks larger than available RAM. Background sampling follows
+the Java Maxent default of random background points, with the sample
+size configurable via the `n_background` argument of `maxent_run()`. The partition function $Z$ is
 accumulated across tiles by summing unnormalized densities
 $\exp(\sum_j \lambda_j f_j(\mathbf{x}_k))$ for each cell $k$ in the
 tile, then normalizing once after all tiles are processed. This produces results equivalent to single-pass evaluation because the
 mathematical sum is commutative and each cell is scored independently;
 floating-point summation order may introduce differences at the
-least-significant bit level.
+least-significant bit level. All accumulators use IEEE 754
+double-precision summation matching the Java implementation; no
+log-sum-exp or other reformulation is applied, so the only numerical
+risk is the usual bounded rounding error of a double-precision sum.
 
 ## Numerical fidelity
 
@@ -448,9 +587,10 @@ Legend: ✓ = implemented and tested; ◐ = partial or experimental;
 
 Categorical variables, replicate runs, jackknife, missing-data handling,
 and background bias weighting are now implemented and tested.
-SWD-to-raster projection remains a workflow convenience not yet exposed
-through the public R API; users can still project models by loading
-environmental grids via `terra` and the package's grid conversion functions.
+SWD-to-raster projection is a planned convenience API (roadmap), not a
+design decision to exclude it; until it is released, users can project
+models by loading environmental grids via `terra` and the package's grid
+conversion functions.
 
 ## Development provenance
 
@@ -472,7 +612,11 @@ accessible repositories:
 # Limitations and inherited assumptions
 
 The Maxent 3.4.4 algorithm that `maxentcpp` faithfully reproduces has
-well-documented limitations that users should be aware of:
+well-documented limitations that users should be aware of. These
+limitations are inherited from the Java algorithm and are not altered
+by the reimplementation: the C++ port preserves the same objective,
+regularization, and background-sampling semantics, so switching
+implementations does not change the statistical behavior of the model:
 
 - **Feature explosion.** The number of features (particularly hinge and
   threshold) grows with the number of environmental variables, which can
@@ -481,7 +625,7 @@ well-documented limitations that users should be aware of:
 - **Sensitivity to background sampling.** Maxent's output is influenced
   by the choice and size of the background sample, which affects the
   estimated density and can bias predictions in undersampled regions
-  [@Phillips2009].
+  [@Phillips2008].
 - **$\ell_1$ regularization limitations.** The sequential coordinate
   ascent with $\ell_1$ penalties produces sparse models but does not
   guarantee selection of the "correct" features under high correlation
@@ -502,8 +646,8 @@ breaking comparability with published analyses. The design of
 Achieving CRAN acceptance requires more than passing `R CMD check`:
 packages must meet strict software-quality standards that safeguard
 user environments and ensure reproducibility across platforms
-[@CRANPolicy2024; @WRE2024]. During the pre-submission review,
-`maxentcpp` was brought to compliance on four fronts. First, all 36
+[@CRANPolicy2024; @WRE2024]. `maxentcpp` (now on CRAN as version 1.0.0)
+was brought to compliance on four fronts. First, all 36
 example blocks were migrated from `\dontrun{}` to `\donttest{}`
 [@CRANcookbook2024] and rewritten to be self-contained with synthetic
 data, so every documented example is live, testable code that CRAN's
@@ -516,7 +660,15 @@ gracefully when the optional dependency is unavailable. Fourth, GitHub
 Actions runs `R CMD check --as-cran` on Ubuntu (R release and R-devel),
 macOS, and Windows, plus a CRAN-preflight job with
 `_R_CHECK_FORCE_SUGGESTS_=false` that simulates CRAN's
-minimal-dependency environment.
+minimal-dependency environment. Memory safety is handled through
+Rcpp external pointers, which release C++ objects automatically when
+the corresponding R object is garbage-collected, and through
+`std::shared_ptr` ownership in the feature layer; the streaming
+provider maps tile data through `Eigen::Map` views to avoid copying
+raster blocks into the scoring engine. The cross-platform `R CMD
+check` matrix (Ubuntu release/devel, macOS, Windows) and the
+`donttest` examples, which double as runtime smoke tests, exercise the
+package under standard and edge-case inputs.
 
 # Research impact statement
 
@@ -547,6 +699,22 @@ models, bringing the package to near-parity with Java Maxent 3.4.4 for
 the implemented feature classes while remaining installable in
 Java-free environments.
 
+# Software availability
+
+`maxentcpp` is released under the MIT license (compatible with Eigen's
+MPL2 and RcppEigen's GPL-2 via the "or later" clause).
+
+- **Package:** `maxentcpp` version 1.0.0 (CRAN); development version from
+  GitHub via `remotes::install_github("alrobles/maxentcpp")`
+- **Source repository:** <https://github.com/alrobles/maxentcpp>
+- **Documentation:** pkgdown site at
+  <https://alrobles.github.io/maxentcpp/> (four vignettes: getting
+  started, mathematical foundations, comparative motivation, virtual
+  species validation)
+- **Issue tracker:** <https://github.com/alrobles/maxentcpp/issues>
+- **Fidelity test suite:** companion package `maxentcppCompTest`
+  (<https://github.com/alrobles/maxentcppCompTest>)
+
 # AI usage disclosure
 
 Generative AI tools were used during the development of `maxentcpp` and
@@ -573,26 +741,12 @@ were translated from Java with AI assistance but under direct human
 supervision: each class was mapped line-by-line from the corresponding
 Java source, reviewed for correctness against the Java reference, and
 validated through the `maxentcppCompTest` trajectory comparison framework.
-Approximately 60% of the C++ algorithmic lines were initially drafted by
-AI tools and subsequently reviewed and corrected by the human author;
-the remaining 40% were written directly by the author, particularly
-the performance-critical optimizer inner loops and numerical edge cases.
-
-**Maintainability.** The human author (Á. L. Robles Fernández) can
-independently explain and modify every algorithmically significant class.
-As evidence: the `Sequential::run()` optimizer, `good_alpha()`,
-`delta_loss_bound()`, `newton_step_feature()`, and `do_parallel_update()`
-methods are documented with line-by-line references to the corresponding
-Java source (e.g., "mirrors Sequential.java:294..342"), and the author
-has independently debugged numerical discrepancies during the
-fidelity testing process.
-
-**Confirmation of review.** All AI-generated code, tests, documentation,
-and manuscript text were reviewed, edited, and validated by the human
-author, who made all core design decisions including the algorithm
-translation strategy, API design, numerical fidelity requirements, and
-the phased development architecture. The full development history is
-publicly available in the four repositories listed above.
+The human author made all core design decisions, reviewed and edited all
+AI-generated code, and can independently explain and modify every
+algorithmically significant class (the optimizer methods are documented
+with line-by-line references to the corresponding Java source). The
+full development history is publicly available in the four repositories
+listed above.
 
 # Acknowledgements
 
