@@ -1,0 +1,174 @@
+{
+ "gap_to_citation_map": [
+  {
+   "gap": "Summary (opening)",
+   "bibkey": "Jaynes1957",
+   "covers": true
+  },
+  {
+   "gap": "Summary (opening)",
+   "bibkey": "Guisan2000",
+   "covers": true
+  },
+  {
+   "gap": "Summary (opening)",
+   "bibkey": "Elith2009",
+   "covers": true
+  },
+  {
+   "gap": "Summary (opening)",
+   "bibkey": "Phillips2008",
+   "covers": true
+  },
+  {
+   "gap": "Summary (opening)",
+   "bibkey": "Renner2013",
+   "covers": true
+  },
+  {
+   "gap": "Summary (opening)",
+   "bibkey": "Warton2010",
+   "covers": true
+  },
+  {
+   "gap": "Statement of need -> Legacy software modernization",
+   "bibkey": "Phillips2008",
+   "covers": false
+  },
+  {
+   "gap": "Statement of need -> Legacy software modernization",
+   "bibkey": "Renner2013",
+   "covers": false
+  },
+  {
+   "gap": "Statement of need -> Legacy software modernization",
+   "bibkey": "Warton2010",
+   "covers": false
+  },
+  {
+   "gap": "Statement of need -> Legacy software modernization",
+   "bibkey": "Elith2009",
+   "covers": false
+  },
+  {
+   "gap": "Performance benchmarks",
+   "bibkey": "Friedman2010",
+   "covers": false
+  },
+  {
+   "gap": "Performance benchmarks",
+   "bibkey": "Tseng2001",
+   "covers": false
+  },
+  {
+   "gap": "Performance benchmarks",
+   "bibkey": "Phillips2008",
+   "covers": false
+  },
+  {
+   "gap": "Empirical comparison",
+   "bibkey": "Phillips2008",
+   "covers": true
+  },
+  {
+   "gap": "Empirical comparison",
+   "bibkey": "Warren2008",
+   "covers": true
+  },
+  {
+   "gap": "Empirical comparison",
+   "bibkey": "Schoener1968",
+   "covers": true
+  },
+  {
+   "gap": "Empirical comparison",
+   "bibkey": "Elith2010",
+   "covers": true
+  },
+  {
+   "gap": "Benchmarks (whole)",
+   "bibkey": "Phillips2008",
+   "covers": false
+  },
+  {
+   "gap": "CRAN compliance and software quality",
+   "bibkey": "Phillips2008",
+   "covers": false
+  },
+  {
+   "gap": "Research impact statement",
+   "bibkey": "Phillips2008",
+   "covers": false
+  },
+  {
+   "gap": "Ecosystem comparison",
+   "bibkey": "Phillips2008",
+   "covers": false
+  },
+  {
+   "gap": "Ecosystem comparison",
+   "bibkey": "Friedman2010",
+   "covers": false
+  },
+  {
+   "gap": "Ecosystem comparison",
+   "bibkey": "Fourcade2014",
+   "covers": false
+  },
+  {
+   "gap": "Ecosystem comparison",
+   "bibkey": "Elith2009",
+   "covers": false
+  }
+ ],
+ "uncovered_gaps": [
+  "Statement of need -> Legacy software modernization",
+  "Performance benchmarks",
+  "Benchmarks (whole)",
+  "CRAN compliance and software quality",
+  "Research impact statement",
+  "Ecosystem comparison"
+ ],
+ "methods_checklist": [
+  {
+   "method": "AUC/ROC",
+   "cited_by": "Phillips2008"
+  },
+  {
+   "method": "MESS",
+   "cited_by": "Elith2010"
+  },
+  {
+   "method": "Schoener's D",
+   "cited_by": "Warren2008"
+  },
+  {
+   "method": "coordinate ascent",
+   "cited_by": "Friedman2010"
+  },
+  {
+   "method": "k-fold CV",
+   "cited_by": "Phillips2008"
+  },
+  {
+   "method": "jackknife",
+   "cited_by": "Phillips2008"
+  },
+  {
+   "method": "elastic net",
+   "cited_by": "Friedman2010"
+  },
+  {
+   "method": "clamping",
+   "cited_by": "Phillips2008"
+  },
+  {
+   "method": "bias grids",
+   "cited_by": "Fourcade2014"
+  },
+  {
+   "method": "virtual species",
+   "cited_by": "MISSING"
+  }
+ ]
+}

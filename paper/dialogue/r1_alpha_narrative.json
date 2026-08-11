@@ -1,0 +1,148 @@
+{
+ "verdict": "Major revision before JOSS-ready. The scientific core is rigorous and honestly scoped \u2014 fidelity claims are carefully bounded, limitations are candid, and provenance is unusually transparent. But the narrative stutters: three consecutive sections (Legacy software modernization, State of the field, Ecosystem comparison) describe the same competitor landscape, a design-rationale paragraph sits orphaned inside Performance benchmarks, the CRAN-compliance deep-dive (5 subsections of administrative detail) derails the middle of the paper, the hook opens with an artifact description instead of stakes or numbers, and several passages are stale against the 1.0.0 feature set ('five feature types' when BinaryFeature makes six; jackknife/replicates/missing-data absent from the Summary). Consolidate related work, compress the CRAN material, refresh feature claims, and end on quantified forward impact.",
+ "strengths": [
+  "Fidelity claims are exemplarily scoped: the <10^-14 / <10^-6 bounds are explicitly conditioned on test fixtures, IEEE 754 doubles, compiler family, and deterministic iteration order, with honest caveats about BLAS backends and -ffast-math.",
+  "The Limitations section is candid and scientific \u2014 feature explosion, background sensitivity, l1 selection under collinearity, and no uncertainty quantification \u2014 without overclaiming novelty.",
+  "The empirical comparison is properly hedged ('suggest', 'illustrative', explicit call for a broader simulation study) and the Schoener's D / rank / Pearson battery is appropriate.",
+  "Concrete, verifiable provenance: four public repositories, a companion fidelity-test package, source-mapped constants, and a thorough JOSS-compliant AI disclosure.",
+  "The feature-completeness table is a strong artifact: clear legend, honest 'not implemented' entries, and it already reflects the 1.0.0 additions.",
+  "The mathematical exposition (objective, per-feature regularization beta_j = sigma_j/sqrt(m), damping schedule, Newton step, parallel updates) is precise and directly source-attributable.",
+  "The paper resists the common JOSS failure of marketing prose \u2014 no claims of ecological superiority, only algorithmic fidelity."
+ ],
+ "narrative_gaps": [
+  {
+   "location": "Summary (opening)",
+   "issue": "The hook names the artifact ('maxentcpp is an R package...') and states the algorithm before establishing why anyone should care. No concrete stakes, no numbers: citation scale is reduced to 'cited extensively', and the paper's best motivating example (500 species x 4 climatic scenarios) is buried in Statement of need item 3.",
+   "suggestion": "Open with the stakes: the citation scale of Maxent, the de facto-standard status, and the specific workflow friction (a JVM spawn + SWD file round-trip per species) that the package removes. Promote the 500x4 example to the first paragraph."
+  },
+  {
+   "location": "Statement of need -> Legacy software modernization",
+   "issue": "The gap is not stated at the end of Statement of need. The reader must traverse two full context sections before learning that the specific gap is the absence of a native port of the density.Sequential optimizer itself.",
+   "suggestion": "Close Statement of need with a one-sentence thesis: 'No existing R package provides a native port of the Java Maxent fitting optimizer itself; maxentcpp fills that gap.' Then the context sections confirm rather than introduce the gap."
+  },
+  {
+   "location": "Performance benchmarks",
+   "issue": "The paragraph 'maxentcpp was built as a new package rather than contributing to existing projects for three reasons' is a design rationale, not a benchmark. It sits inside a data section with no transition, breaking the section's single job (timing evidence).",
+   "suggestion": "Move it to the end of the related-work sections, where it answers the obvious question 'why not extend maxnet/dismo?', and open it with a bridging sentence."
+  },
+  {
+   "location": "Empirical comparison",
+   "issue": "The paper twice asserts that maxnet diverges 'particularly for threshold and hinge features' (State of the field, Ecosystem comparison), yet the only quantitative comparison uses linear + quadratic + hinge \u2014 threshold features are never tested. The flagship divergence claim is therefore untested by the paper's own evidence.",
+   "suggestion": "Either add threshold features to the comparison (they are the most likely to show divergence) or rephrase the claim as expected-but-unquantified, explicitly noting the benchmark excludes them."
+  },
+  {
+   "location": "Benchmarks (whole)",
+   "issue": "The package's flagship differentiator \u2014 streaming projection onto rasters larger than RAM \u2014 is never measured; the text concedes 'future benchmarks should quantify this advantage.' Likewise the 'eliminates per-call overhead entirely' claim in Statement of need #3 has no JVM-startup or I/O timing behind it. The motivating 500x4 multi-species workflow never returns in the body.",
+   "suggestion": "Add at least one small quantitative demonstration: a per-species wall-clock comparison including JVM startup, or a peak-memory measurement on a raster larger than RAM. If that is out of scope for the paper, soften both claims to match the evidence."
+  },
+  {
+   "location": "CRAN compliance and software quality",
+   "issue": "Five subsections of CRAN-policy minutiae (dontrun vs donttest migration, on.exit graphics restoration, requireNamespace guards, CI matrix) form ~800 words of administrative history with near-zero scientific content. They sit between Limitations and Impact, killing narrative momentum exactly where the paper should be cresting.",
+   "suggestion": "Compress to a single 'Software quality' paragraph (or a short appendix) stating the outcome: all examples live and testable, state restoration enforced, terra optional, CI on three OSes with --run-donttest. Reserve the mechanics for the README."
+  },
+  {
+   "location": "Research impact statement",
+   "issue": "The final paragraph repeats the feature inventory of the previous paragraph ('categorical predictors, replicate diagnostics, and missing-data handling') almost verbatim, and the paper ends on a backward-looking, doubly hedged parity statement ('closer to parity... for the implemented feature classes'). The only forward-looking sentence is mid-section and weakened by 'may'.",
+   "suggestion": "End on forward-looking value: the workflows the package now unlocks (multi-species, multi-scenario, categorical covariates, streaming projection) and the guarantee that results remain comparable with the Java-Maxent literature."
+  },
+  {
+   "location": "Ecosystem comparison",
+   "issue": "Third restatement of the same landscape. Legacy software modernization describes dismo/maxnet/rmaxent/ENMeval, State of the field re-describes them, Ecosystem comparison re-groups them. The table is valuable; the accompanying prose is redundant.",
+   "suggestion": "Keep the table plus the three-bucket grouping, cut the repeated maxnet paragraph, and cross-reference the earlier sections."
+  }
+ ],
+ "hook_suggestions": [
+  "Open with a number: Maxent's foundational papers are cited tens of thousands of times and its output feeds global biodiversity and climate-risk assessments \u2014 then state the tension: the reference implementation is a Java desktop app last substantially updated in 2017.",
+  "Lead with the per-run friction as the stakes: 'A conservation analyst fitting 500 species across 4 climate scenarios currently spawns a JVM and serializes SWD files to disk for every single fit.'",
+  "State the thesis in the first paragraph: maxentcpp is the first native, optimizer-identical R reimplementation of Maxent \u2014 no JVM, no file round-trips, streaming projection beyond RAM.",
+  "Use one real measured number early (e.g., the ~820 ms native fit vs the JVM+file overhead per run, or the 2,371-cell / 100-presence comparison design) so the Summary promises evidence the body delivers."
+ ],
+ "transition_fixes": [
+  "Statement of need -> Legacy software modernization: insert a bridge such as 'This Java-centric friction is part of a broader modernization wave in ecological software, and maxentcpp sits deliberately within it.'",
+  "Legacy software modernization -> State of the field: delete the duplicated dismo/maxnet/rmaxent/ENMeval descriptions from the earlier section (keep Circuitscape.jl and the sp/raster-to-sf/terra trend) and open State of the field with 'What separates the Maxent-facing R packages is not the statistical model \u2014 most target the same Gibbs distribution \u2014 but their relationship to the original optimizer.'",
+  "Performance benchmarks -> Software design: add 'Having established what maxentcpp produces, we turn to how it is built.'",
+  "Limitations -> CRAN compliance: if the section survives compression, open with 'A separate but essential concern is software quality for distribution; the pre-submission review drove the following hardening.'",
+  "Split the long 'These results suggest...' sentence in the empirical comparison: end the D/rho/r sentence at 'high niche overlap', then start a new sentence on tail divergence.",
+  "Ecosystem comparison: open with 'Table 4 summarizes the landscape; the grouping below is what matters for users.' and drop the repeated maxnet paragraph."
+ ],
+ "structure_recommendations": [
+  "Collapse the three related-work sections into one 'Related work' with a clear internal arc: (1) the modernization trend (Circuitscape.jl, sf/terra, ENMeval dropping rJava), (2) direct Maxent competitors (rmaxent, maxnet \u2014 the only one needing full treatment \u2014 ENMeval, kuenm), (3) the ecosystem table with the three-bucket grouping as the synthesis. This removes the triple repetition and shortens the paper by roughly a third.",
+  "Reorder the body: Summary -> Statement of need -> Related work -> Empirical comparison and benchmarks -> Software design -> Limitations -> Impact. Move Development provenance and CRAN compliance after Impact (or an appendix) so the scientific arc is unbroken.",
+  "Merge the feature table's new rows (categorical, replicates/CV, jackknife, missing data, bias grids) into the Summary's capability sentence so the paper's opening reflects 1.0.0 rather than only the table deep in the body.",
+  "Drop the commit counts (193/34/40/47) from Development provenance \u2014 they are stale-prone and carry no scientific information; keep the four-repository structure.",
+  "Either add a small multi-species benchmark to substantiate the 500x4 motivation, or explicitly soften Statement of need item 3 to match the single-dataset evidence actually presented.",
+  "Compress CRAN compliance to one paragraph; JOSS readers need the outcome (testable examples, clean state, CI breadth), not the dontrun-to-donttest migration narrative."
+ ],
+ "alignment_issues": [
+  {
+   "location": "Summary, paragraph 3",
+   "issue": "'The package supports all five feature types (linear, quadratic, product, hinge, and threshold)' is stale: with BinaryFeature for categorical predictors, 1.0.0 implements six feature types. The same 'five feature types' label appears in the Architecture table.",
+   "suggestion": "Update both to 'six feature types' or 'the five continuous-predictor feature types plus binary features for categorical predictors'."
+  },
+  {
+   "location": "Summary, paragraph 3 (diagnostics list)",
+   "issue": "The capability list ('AUC evaluation, permutation importance, response curves, and MESS') omits the 1.0.0 headline features: jackknife diagnostics, replicate runs/cross-validation, categorical predictors, and missing-data handling.",
+   "suggestion": "Extend the sentence: '...response curves, MESS novelty surfaces, jackknife variable selection, and replicate runs with cross-validation; categorical predictors and missing-data handling are supported.'"
+  },
+  {
+   "location": "Architecture table",
+   "issue": "The C++ algorithmic row (~4,500 lines) predates the BinaryFeature, missing-data, and replicate-run code added for 1.0.0; the 'five feature types' label is likewise stale.",
+   "suggestion": "Re-run cloc against the 1.0.0 tag, update the line counts, and relabel the feature set."
+  },
+  {
+   "location": "Numerical fidelity mapping table",
+   "issue": "The class-mapping table lists only the five continuous feature classes; there is no row for BinaryFeature, which is now part of the fidelity contract.",
+   "suggestion": "Add 'BinaryFeature | density.BinaryFeature' to the table."
+  },
+  {
+   "location": "Feature completeness table vs text (SWD-to-raster projection)",
+   "issue": "The table marks SWD-to-raster projection '\u2014' (legend: 'not implemented'), but the text says it 'remains a workflow convenience not yet exposed through the public R API' \u2014 i.e., implemented internally but not exposed. Legend and content contradict.",
+   "suggestion": "Either change the row to '\u25d0' (partial: implemented, not exposed) or align the legend/text to read 'not exposed through the public R API'."
+  },
+  {
+   "location": "Feature completeness table, maxnet rows",
+   "issue": "'Categorical variables \u2713' and 'Missing data handling \u2713' for maxnet deserve verification: maxnet encodes categoricals via model-matrix dummies (not Maxent's BinaryFeature), and missing data is dropped by the glmnet path rather than handled with Maxent semantics. Marking both \u2713 may overstate equivalence.",
+   "suggestion": "Verify against maxnet 0.1.4 behavior and downgrade to '\u25d0' if semantics differ, with a footnote."
+  },
+  {
+   "location": "Benchmarks",
+   "issue": "No benchmark exercises any 1.0.0 feature: no categorical-predictor fit, no missing-data run, no replicate-run cost, no jackknife timing. The paper's newest capabilities are entirely unmeasured.",
+   "suggestion": "Add at least timing rows for a categorical-inclusive fit and a replicate run, or state explicitly in the benchmark section that 1.0.0 features are excluded and why."
+  },
+  {
+   "location": "Research impact statement",
+   "issue": "The final paragraph duplicates the feature list from the paragraph above it; the paper's last words are a backward-looking parity inventory.",
+   "suggestion": "Merge the two paragraphs and end on forward-looking value (see rewritten_paragraphs)."
+  }
+ ],
+ "overclaims": [
+  "Summary: 'enabling continental-scale projections on commodity hardware' \u2014 no memory or scale benchmark is presented; the benchmarks section itself concedes the streaming advantage is unquantified. Soften to 'designed to project onto rasters larger than available RAM' or add the measurement.",
+  "'Particularly for threshold and hinge features' divergence from maxnet, asserted twice (State of the field, Ecosystem comparison) \u2014 stated as fact, never demonstrated; the paper's own comparison excludes threshold features. Reframe as expected-but-unquantified.",
+  "'To the best of current knowledge, maxentcpp is the first R package to target the Java Maxent 3.4.4 density.Sequential optimizer through a native C++ port' \u2014 hedged but unverifiable as phrased; reframe as a survey-based claim ('no other R package we identified...').",
+  "'Each statement is covered by a source-mapping test in maxentcppCompTest' \u2014 the absolute 'each statement' overreaches; soften to 'every numerical constant and control-flow branch in this description is covered...'.",
+  "Statement of need item 3: 'eliminates this per-call overhead entirely' \u2014 no JVM-startup or file-I/O measurement is presented; the elimination is architectural, not measured. Either add a timing or say 'removes the per-call overhead' without 'entirely'.",
+  "Feature table: maxnet 'Missing data handling \u2713' \u2014 semantics differ (NA dropping vs Maxent handling); verify before keeping the check."
+ ],
+ "rewritten_paragraphs": [
+  {
+   "location": "Summary (opening hook)",
+   "text": "Presence-only species distribution models underpin much of conservation planning, and Maxent is the tool of record: its foundational papers are cited tens of thousands of times, and its output feeds global biodiversity assessments, climate-change risk analyses, and protected-area decisions [@Phillips2006; @Elith2011]. Yet the reference implementation is a Java desktop application last substantially updated in 2017: it requires a Java runtime, serializes data to disk for every fit, and runs single-threaded \u2014 a poor fit for the scripted, multi-species workflows (e.g., 500 species x 4 climate scenarios) that dominate present-day modeling. maxentcpp is a native C++17 port of the Maxent 3.4.4 fitting and projection algorithm with R bindings via Rcpp, preserving the exact density.Sequential optimizer so results remain comparable with the published Java-Maxent literature \u2014 without a JVM, without file round-trips, and with streaming projection onto rasters larger than RAM."
+  },
+  {
+   "location": "Performance benchmarks (relocated design rationale)",
+   "text": "These considerations motivated building maxentcpp as a new package rather than extending existing ones. A faithful port of the sequential coordinate-ascent optimizer cannot be expressed through glmnet's API, so contributing to maxnet would change its core algorithm; dismo's architecture is coupled to rJava and raster, the exact dependency chain this work removes; and the header-based C++ core is deliberately reusable outside R, which no R-only package can offer."
+  },
+  {
+   "location": "CRAN compliance and software quality (compressed)",
+   "text": "Beyond scientific design, maxentcpp was hardened for CRAN submission. All 36 documentation examples were migrated from \\dontrun{} to \\donttest{} and rewritten to be self-contained on synthetic data, so every example is live, testable code; plotting functions restore graphics state through on.exit()-based helpers; and terra-dependent examples are guarded by requireNamespace() so checks pass in CRAN's minimal-dependency environment. GitHub Actions runs R CMD check --as-cran on Ubuntu, macOS, and Windows across R release and R-devel with --run-donttest enabled, plus a CRAN-preflight job that simulates _R_CHECK_FORCE_SUGGESTS_=false."
+  },
+  {
+   "location": "Research impact statement (closing)",
+   "text": "The dependency-free, memory-efficient design is not an end in itself: it removes the two frictions that most often push ecologists away from Maxent in large workflows \u2014 the JVM startup and file round-trips per species, and the memory ceiling on projection. With categorical predictors, replicate runs, jackknife, and missing-data handling now at parity with Java Maxent 3.4.4 for the implemented feature classes, maxentcpp is positioned for the next generation of multi-species, multi-scenario assessments \u2014 and because the optimizer is trajectory-tested against the Java original, everything it produces remains comparable with the literature built on Java Maxent."
+  },
+  {
+   "location": "State of the field (opening, replacing duplicated competitor descriptions)",
+   "text": "The modernization trend described above is visible concretely in the R packages that currently provide access to Maxent-family models. What separates them is not the statistical model \u2014 most target the same Gibbs distribution \u2014 but their relationship to the original optimizer. rmaxent [@Baumgartner2017] provides Java-free projection of fitted models from .lambdas files but does not fit models; maxnet [@Phillips2024maxnet] fits the same model via glmnet's elastic-net path, which can produce numerically different results than the original sequential coordinate-ascent optimizer; ENMeval [@Kass2021] and kuenm [@Cobos2019] are tuning and calibration frameworks that delegate fitting to one of the above. Only maxentcpp ports the density.Sequential optimizer itself and proves per-iteration equivalence."
+  }
+ ]
+}

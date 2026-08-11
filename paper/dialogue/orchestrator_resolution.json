@@ -1,0 +1,4 @@
+{
+ "orchestrator_resolution": "Round 2: alpha accepted 7/12, rejected 5 as padding/off-target. Orchestrator agrees with alpha on all 5 rejections (Renner2013, Guisan2000, Elith2009, Warton2010, Fourcade2014): no manuscript claim anchors them; Merow2013 already covers 'de facto standard'. All 7 accepted citations VERIFIED against CrossRef.",
+ "method_checklist_resolution": "virtual species -> Leroy2016 already in bib; AUC/ROC -> Phillips2008 (new); MESS -> Elith2010 (new); Schoener's D -> Warren2008 + Schoener1968 (new); coordinate ascent -> Tseng2001 (new); elastic net -> Friedman2010 (new); clamping/regularization/k-fold/jackknife -> Phillips2008 (new)."
+}

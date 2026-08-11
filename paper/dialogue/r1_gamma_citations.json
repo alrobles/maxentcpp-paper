@@ -1,0 +1,148 @@
+{
+ "proposed_new_citations": [
+  {
+   "bibkey": "Phillips2008",
+   "authors": "Phillips, S. J. and Dud\u00edk, M.",
+   "year": "2008",
+   "title": "Modeling of species distributions with Maxent: new extensions and a comprehensive evaluation",
+   "journal": "Ecography",
+   "volume": "31",
+   "pages": "161--175",
+   "doi": "10.1111/j.0906-7590.2008.5203.x",
+   "confidence": "HIGH",
+   "where_to_cite": "When describing Maxent regularization, feature classes (hinge, threshold, product), clamping, and model evaluation framework; directly underpins maxentcpp's feature completeness table."
+  },
+  {
+   "bibkey": "Jaynes1957",
+   "authors": "Jaynes, E. T.",
+   "year": "1957",
+   "title": "Information theory and statistical mechanics",
+   "journal": "Physical Review",
+   "volume": "106",
+   "pages": "620--630",
+   "doi": "10.1103/PhysRev.106.620",
+   "confidence": "HIGH",
+   "where_to_cite": "In the Summary section when introducing the maximum entropy principle and Gibbs distribution formulation; canonical source for MaxEnt theory."
+  },
+  {
+   "bibkey": "Elith2010",
+   "authors": "Elith, J., Kearney, M., and Phillips, S. J.",
+   "year": "2010",
+   "title": "The art of modelling range-shifting species",
+   "journal": "Methods in Ecology and Evolution",
+   "volume": "1",
+   "pages": "330--342",
+   "doi": "10.1111/j.2041-210X.2010.00036.x",
+   "confidence": "HIGH",
+   "where_to_cite": "When introducing Multivariate Environmental Similarity Surfaces (MESS) for novelty detection; original MESS methodology paper."
+  },
+  {
+   "bibkey": "Warren2008",
+   "authors": "Warren, D. L., Glor, R. E., and Turelli, M.",
+   "year": "2008",
+   "title": "Environmental niche equivalency versus conservatism: quantitative approaches to niche evolution",
+   "journal": "Evolution",
+   "volume": "62",
+   "pages": "2868--2883",
+   "doi": "10.1111/j.1558-5646.2008.00482.x",
+   "confidence": "HIGH",
+   "where_to_cite": "In the empirical comparison section when reporting Schoener's D for niche overlap between maxentcpp and maxnet predictions; introduced D as a niche overlap metric."
+  },
+  {
+   "bibkey": "Schoener1968",
+   "authors": "Schoener, T. W.",
+   "year": "1968",
+   "title": "The Anolis lizards of Bimini: resource partitioning in a complex fauna",
+   "journal": "Ecology",
+   "volume": "49",
+   "pages": "704--726",
+   "doi": "10.2307/1935534",
+   "confidence": "MEDIUM",
+   "where_to_cite": "As the original source of Schoener's D index when first defining the metric in the empirical comparison table."
+  },
+  {
+   "bibkey": "Friedman2010",
+   "authors": "Friedman, J., Hastie, T., and Tibshirani, R.",
+   "year": "2010",
+   "title": "Regularization paths for generalized linear models via coordinate descent",
+   "journal": "Journal of Statistical Software",
+   "volume": "33",
+   "pages": "1--22",
+   "doi": "10.18637/jss.v033.i01",
+   "confidence": "HIGH",
+   "where_to_cite": "In the State of the field section when contrasting maxnet's glmnet-based elastic-net coordinate descent with maxentcpp's sequential coordinate ascent; canonical glmnet reference."
+  },
+  {
+   "bibkey": "Renner2013",
+   "authors": "Renner, I. W. and Warton, D. I.",
+   "year": "2013",
+   "title": "Equivalence of MaxEnt and Poisson point process models for species distribution modeling",
+   "journal": "Biometrics",
+   "volume": "69",
+   "pages": "274--281",
+   "doi": "10.1111/j.1541-0420.2012.01824.x",
+   "confidence": "HIGH",
+   "where_to_cite": "In the Summary or State of the field when discussing the statistical foundations of Maxent; establishes MaxEnt-Poisson point process equivalence."
+  },
+  {
+   "bibkey": "Guisan2000",
+   "authors": "Guisan, A. and Zimmermann, N. E.",
+   "year": "2000",
+   "title": "Predictive habitat distribution models in ecology",
+   "journal": "Ecological Modelling",
+   "volume": "135",
+   "pages": "147--186",
+   "doi": "10.1016/S0304-3800(00)00354-9",
+   "confidence": "HIGH",
+   "where_to_cite": "In the Statement of need or Introduction when situating Maxent within the broader species distribution modeling literature; foundational SDM review."
+  },
+  {
+   "bibkey": "Elith2009",
+   "authors": "Elith, J. and Leathwick, J. R.",
+   "year": "2009",
+   "title": "Species distribution models: ecological explanation and prediction across space and time",
+   "journal": "Annual Review of Ecology, Evolution, and Systematics",
+   "volume": "40",
+   "pages": "677--697",
+   "doi": "10.1146/annurev.ecolsys.110308.120159",
+   "confidence": "HIGH",
+   "where_to_cite": "In the Statement of need when describing Maxent as the de facto standard for presence-only SDM; authoritative review of SDM methods including Maxent."
+  },
+  {
+   "bibkey": "Warton2010",
+   "authors": "Warton, D. I. and Shepherd, L. C.",
+   "year": "2010",
+   "title": "Poisson point process models solve the 'pseudo-absence problem' for presence-only data in ecology",
+   "journal": "Annals of Applied Statistics",
+   "volume": "4",
+   "pages": "1383--1402",
+   "doi": "10.1214/10-AOAS331",
+   "confidence": "HIGH",
+   "where_to_cite": "In the Summary or State of the field when discussing presence-only modeling frameworks; alternative theoretical foundation for Maxent-like models."
+  },
+  {
+   "bibkey": "Tseng2001",
+   "authors": "Tseng, P.",
+   "year": "2001",
+   "title": "Convergence of a block coordinate descent method for nondifferentiable minimization",
+   "journal": "Journal of Optimization Theory and Applications",
+   "volume": "109",
+   "pages": "475--494",
+   "doi": "10.1023/A:1017501703105",
+   "confidence": "MEDIUM",
+   "where_to_cite": "In the Optimization algorithm section when describing the sequential coordinate ascent optimizer; theoretical basis for convergence of coordinate descent with L1 penalties."
+  },
+  {
+   "bibkey": "Fourcade2014",
+   "authors": "Fourcade, Y., Engler, J. O., R\u00f6dder, D., and Secondi, J.",
+   "year": "2014",
+   "title": "Mapping species distributions with MAXENT using a geographically biased sample of presence data: a performance assessment of methods for correcting sampling bias",
+   "journal": "PLOS ONE",
+   "volume": "9",
+   "pages": "e97122",
+   "doi": "10.1371/journal.pone.0097122",
+   "confidence": "MEDIUM",
+   "where_to_cite": "In the Feature completeness table or Statement of need when discussing bias grids / background bias weighting; evaluates bias correction methods in Maxent."
+  }
+ ]
+}

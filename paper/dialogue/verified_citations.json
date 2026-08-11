@@ -1,0 +1,65 @@
+{
+ "Phillips2008": {
+  "doi": "10.1111/j.0906-7590.2008.5203.x",
+  "status": "VERIFIED",
+  "title": "Modeling of species distributions with Maxent: new extensions and a comprehensive evaluation",
+  "journal": "Ecography",
+  "year": 2008,
+  "volume": 31,
+  "pages": "161--175"
+ },
+ "Jaynes1957": {
+  "doi": "10.1103/PhysRev.106.620",
+  "status": "VERIFIED",
+  "title": "Information theory and statistical mechanics",
+  "journal": "Physical Review",
+  "year": 1957,
+  "volume": 106,
+  "pages": "620--630"
+ },
+ "Elith2010": {
+  "doi": "10.1111/j.2041-210X.2010.00036.x",
+  "status": "VERIFIED",
+  "title": "The art of modelling range-shifting species",
+  "journal": "Methods in Ecology and Evolution",
+  "year": 2010,
+  "volume": 1,
+  "pages": "330--342"
+ },
+ "Warren2008": {
+  "doi": "10.1111/j.1558-5646.2008.00482.x",
+  "status": "VERIFIED",
+  "title": "Environmental niche equivalency versus conservatism: quantitative approaches to niche evolution",
+  "journal": "Evolution",
+  "year": 2008,
+  "volume": 62,
+  "pages": "2868--2883"
+ },
+ "Schoener1968": {
+  "doi": "10.2307/1935534",
+  "status": "VERIFIED",
+  "title": "The Anolis lizards of Bimini: resource partitioning in a complex fauna",
+  "journal": "Ecology",
+  "year": 1968,
+  "volume": 49,
+  "pages": "704--726"
+ },
+ "Friedman2010": {
+  "doi": "10.18637/jss.v033.i01",
+  "status": "VERIFIED",
+  "title": "Regularization paths for generalized linear models via coordinate descent",
+  "journal": "Journal of Statistical Software",
+  "year": 2010,
+  "volume": 33,
+  "pages": "1--22"
+ },
+ "Tseng2001": {
+  "doi": "10.1023/A:1017501703105",
+  "status": "VERIFIED",
+  "title": "Convergence of a block coordinate descent method for nondifferentiable minimization",
+  "journal": "Journal of Optimization Theory and Applications",
+  "year": 2001,
+  "volume": 109,
+  "pages": "475--494"
+ }
+}
