@@ -107,8 +107,8 @@ Two datasets were used:
 \toprule
 \textbf{Measurement} & \textbf{maxentcpp} & \textbf{maxnet} \\
 \midrule
-Fresh-state fit, median of 30 runs & $\sim$5.0 ms & --- \\
-Warm fit, median of 3 runs & $\sim$2 ms & $\sim$246 ms \\
+Fresh-state fit, median of 30 runs & $\sim$6.0 ms & --- \\
+Warm fit, median of 3 runs & $\sim$2 ms & $\sim$256 ms \\
 Iterations to convergence (fresh) & 121 & --- \\
 End-to-end \texttt{maxent\_run()} (fit+eval+diag), median of 3 & 14 ms & --- \\
 \bottomrule
@@ -127,10 +127,47 @@ permutation importance, and CSV output; each of those stages costs
 wall time (Section~\ref{sec:breakdown}).  The per-iteration cost is
 approximately
 \[
-5.0\text{ ms} / 121 \approx 0.041\text{ ms/iteration},
+6.0\text{ ms} / 121 \approx 0.050\text{ ms/iteration},
 \]
 three orders of magnitude below the pre-optimizer value
 ($\sim$69\,ms/iteration).
+
+\subsection{Multi-package comparison (Abeillia dataset)}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Package} & \textbf{Median time per fit} & \textbf{Training AUC} & \textbf{Iterations} \\
+\midrule
+\texttt{maxentcpp} (Sequential, default) & $\sim$6.0 ms & 0.8035 & 121 \\
+\texttt{predicts} & $\sim$152 ms & 0.7735 & 280 \\
+\texttt{dismo} & $\sim$163 ms & 0.7735 & 280 \\
+\texttt{maxnet} & $\sim$256 ms & 0.7816 & --- \\
+\bottomrule
+\end{tabular}
+\caption{Multi-package fit-time comparison on the bundled \emph{Abeillia
+abeillei} dataset (73 presences, 2,371 background cells, lqh features,
+\texttt{max\_iter = 500}; median over 30 fresh-state runs for
+\texttt{maxentcpp} and \texttt{maxnet}, 10 runs for \texttt{dismo} and
+\texttt{predicts}).  Training AUCs are computed on each package's own
+training/background frame and are therefore not strictly comparable
+across rows; the statistical equivalence of predictions is established
+by the expanded virtual-species simulation ($r \ge 0.95$ in every
+cell).  The Java-based wrappers pay a per-call JVM startup and
+file-serialization cost; \texttt{maxnet} uses a different
+coordinate-descent optimizer.}
+\label{tab:multipkg}
+\end{table}
+
+\texttt{maxentcpp} is approximately 25--43$\times$ faster than the
+other R implementations on this fixture ($\sim$43$\times$ vs
+\texttt{maxnet}, $\sim$27$\times$ vs \texttt{dismo}, $\sim$25$\times$ vs
+\texttt{predicts}) while preserving per-iteration trajectory parity with
+Java Maxent 3.4.4.  Both Java wrappers report the same 280 iterations
+(both invoke the same \texttt{maxent.jar}); \texttt{maxentcpp}
+converges in 121 iterations.
 
 \subsection{Time breakdown}
 \label{sec:breakdown}
