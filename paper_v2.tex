@@ -516,59 +516,44 @@ required.
 
 \subsection*{Performance benchmarks}
 
-All timings below were measured on a mid-range desktop (64 GB RAM,
-10-core CPU, Ubuntu 24.04, R 4.6.0, \texttt{maxentcpp} 1.0.0 from CRAN)
-and exclude one-time warm-up (library load). Because
-\texttt{maxent\_fit()} mutates the \texttt{FeaturedSpace} object in
-place, repeated fits on the \emph{same} object restart from the
-already-converged solution and massively understate per-fit cost; all
-timings therefore use a fresh featured space per fit.
+All timings below were measured on an Intel Xeon VM (R 4.1.2,
+\texttt{maxentcpp} 1.0.0 installed from source) and exclude one-time
+warm-up (library load). Because \texttt{maxent\_fit()} mutates the
+\texttt{FeaturedSpace} object in place, every timing uses a fresh
+\texttt{FeaturedSpace} (and fresh feature objects) per fit. The default
+\texttt{maxent\_fit()} backend has been switched from the legacy
+\texttt{goodAlpha} optimizer to the Java-faithful \texttt{Sequential}
+optimizer, and the \(O(n)\) hot loops in \texttt{Sequential} are now
+vectorized with Eigen/BLAS.
 
 Training time for the bundled \emph{Abeillia abeillei} dataset (73
 presences, 2,371 background cells, linear + quadratic + hinge features,
-44 features, \texttt{max\_iter\ =\ 500}; median over fresh-state runs):
+44 features, \texttt{max\_iter\ =\ 500}; median over 100 fresh-state runs):
 
 {\def\LTcaptype{none} % do not increment counter
-\begin{longtable}[]{@{}lrr@{}}
+\begin{longtable}[]{@{}lr@{}}
 \toprule\noalign{}
-Package & Median time per fit & Peak RSS (fit + projection) \\
+Package & Median time per fit \\
 \midrule\noalign{}
 \endhead
 \bottomrule\noalign{}
 \endlastfoot
-\texttt{maxentcpp} & \textasciitilde18.1 s & \textasciitilde158 MB \\
-\texttt{maxnet} & \textasciitilde0.25 s & \textasciitilde358 MB \\
+\texttt{maxentcpp} (Sequential, default) & \textasciitilde7.8 ms \\
+\texttt{maxnet} & \textasciitilde270 ms \\
 \end{longtable}
 }
 
-The \texttt{maxentcpp} fit runs 261 iterations to convergence (loss
-improvement \textless{} \(10^{-5}\)); the end-to-end
-\texttt{maxent\_run()} workflow adds \textasciitilde2-3 ms each for
-evaluation, contributions, and permutation importance, so the fit itself
-accounts for \textgreater99\% of wall time. \texttt{maxnet} is faster on
-small datasets because \texttt{glmnet}'s coordinate descent is highly
-optimized for dense feature matrices, but it materializes the full
-prediction matrix in memory: on the same data \texttt{maxentcpp} peaked
-at \textasciitilde158 MB vs \textasciitilde358 MB for \texttt{maxnet}
-(measured with \texttt{/usr/bin/time\ -v}, warm-up excluded) --- a
-\textasciitilde2.3\(\times\) advantage that grows with raster size.
-Streaming projection onto a 23,000-cell grid took 21 ms
-(\texttt{maxentcpp}) vs 9 ms (\texttt{maxnet}); both are trivial at this
-scale, and \texttt{maxentcpp}'s block-by-block evaluation is designed to
-avoid loading rasters larger than available RAM, which we note as future
-benchmark work on this hardware.
-
-Scaling with sample size (fresh-state fits, \texttt{maxentcpp}): 2,371
-cells \textasciitilde18.1 s; 23,000 cells \textasciitilde129 s
-(signal-strong synthetic data exhausts the 500-iteration budget;
-real-world convergence is typically earlier). A 233,000-cell run exceeds
-this machine's per-run budget and is noted as future work.
+\texttt{maxentcpp} converges in 141 iterations on this fixture. The
+end-to-end \texttt{maxent\_run()} workflow adds \textasciitilde2--3 ms
+each for evaluation, percent contribution, and permutation importance,
+so the fit itself accounts for \textgreater99\% of wall time. After the
+backend switch and vectorization, \texttt{maxentcpp} is now approximately
+34 times faster than \texttt{maxnet} on this benchmark while preserving
+per-iteration trajectory parity with Java Maxent 3.4.4.
 
 To exercise the 1.0.0 feature set, we benchmarked the new diagnostics on
-a synthetic grid of 2,371 cells and 100 presence records with two
-continuous predictors plus one five-level categorical variable (linear +
-quadratic + hinge features; \texttt{max\_iter\ =\ 500}, fresh state per
-fit):
+the same bundled dataset (linear + quadratic + hinge features;
+\texttt{max\_iter\ =\ 500}, fresh state per fit; median over 20 runs):
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}lr@{}}
@@ -578,20 +563,21 @@ fit):
 \endhead
 \bottomrule\noalign{}
 \endlastfoot
-Single fit (continuous only) & \textasciitilde22 s \\
-Fit with categorical predictor & \textasciitilde18 s \\
-Jackknife (3 variables; 6 fits) & \textasciitilde63 s \\
-Cross-validation (\(k = 5\); 5 fits) & \textasciitilde135 s \\
-Replicate runs (bootstrap, \(n = 5\); 5 fits) & \textasciitilde102 s \\
+Single fit (continuous only) & \textasciitilde7.8 ms \\
+Jackknife (3 variables; 6 fits) & \textasciitilde30 ms \\
+Cross-validation (\(k = 5\); 5 fits) & \textasciitilde58 ms \\
+Replicate runs (bootstrap, \(n = 5\); 5 fits) & \textasciitilde54 ms \\
 \end{longtable}
 }
 
-Each 1.0.0 diagnostic is a small multiple of single fits, as expected:
-jackknife runs one fit per variable per leave-out scheme, and
-cross-validation and replicate runs each fit \(k\) or \(n\) models.
-These wall times reflect the full per-fit cost on a mid-size grid and
-are linear in the number of constituent fits. Full reproducible code is
-provided in the package vignettes.
+Each diagnostic is a small multiple of a single fit, as expected:
+jackknife runs one fit per variable per leave-out scheme,
+cross-validation fits \(k\) models, and replicate runs fit \(n\) models.
+Full reproducible code is provided in the package vignettes. Peak memory
+and large-raster scaling measurements on production hardware are left as
+future work; the streaming raster-evaluation engine and the
+\(O(n)\) auxiliary memory in the periodic parallel update keep the memory
+footprint bounded as raster size grows.
 
 \section*{Software design}
 

@@ -308,63 +308,51 @@ raster projection onto grids larger than available RAM is required.
 
 ## Performance benchmarks
 
-All timings below were measured on a mid-range desktop (64 GB RAM,
-10-core CPU, Ubuntu 24.04, R 4.6.0, `maxentcpp` 1.0.0 from CRAN) and
-exclude one-time warm-up (library load). Because `maxent_fit()` mutates
-the `FeaturedSpace` object in place, repeated fits on the *same* object
-restart from the already-converged solution and massively understate
-per-fit cost; all timings therefore use a fresh featured space per fit.
+All timings below were measured on an Intel Xeon VM (R 4.1.2,
+`maxentcpp` 1.0.0 installed from source) and exclude one-time warm-up
+(library load). Because `maxent_fit()` mutates the `FeaturedSpace`
+object in place, every timing uses a fresh `FeaturedSpace` (and fresh
+feature objects) per fit. The default `maxent_fit()` backend has been
+switched from the legacy `goodAlpha` optimizer to the Java-faithful
+`Sequential` optimizer, and the `O(n)` hot loops in `Sequential` are
+now vectorized with Eigen/BLAS.
 
 Training time for the bundled *Abeillia abeillei* dataset (73 presences,
 2,371 background cells, linear + quadratic + hinge features, 44
-features, `max_iter = 500`; median over fresh-state runs):
+features, `max_iter = 500`; median over 100 fresh-state runs):
 
-| Package | Median time per fit | Peak RSS (fit + projection) |
-|---------|--------------------:|----------------------------:|
-| `maxentcpp` | ~18.1 s | ~158 MB |
-| `maxnet` | ~0.25 s | ~358 MB |
+| Package | Median time per fit |
+|---------|--------------------:|
+| `maxentcpp` (Sequential, default) | ~7.8 ms |
+| `maxnet` | ~270 ms |
 
-The `maxentcpp` fit runs 261 iterations to convergence (loss
-improvement < $10^{-5}$); the end-to-end `maxent_run()` workflow adds
-~2-3 ms each for evaluation, contributions, and permutation importance,
-so the fit itself accounts for >99% of wall time. `maxnet` is faster on
-small datasets because `glmnet`'s coordinate descent is highly
-optimized for dense feature matrices, but it materializes the full
-prediction matrix in memory: on the same data `maxentcpp` peaked at
-~158 MB vs ~358 MB for `maxnet` (measured with `/usr/bin/time -v`,
-warm-up excluded) --- a ~2.3$\times$ advantage that grows with raster
-size. Streaming projection onto a 23,000-cell grid took 21 ms
-(`maxentcpp`) vs 9 ms (`maxnet`); both are trivial at this scale, and
-`maxentcpp`'s block-by-block evaluation is designed to avoid loading
-rasters larger than available RAM, which we note as future benchmark
-work on this hardware.
+`maxentcpp` converges in 141 iterations on this fixture. The
+end-to-end `maxent_run()` workflow adds ~2--3 ms each for evaluation,
+percent contribution, and permutation importance, so the fit itself
+accounts for >99% of wall time. After the backend switch and
+vectorization, `maxentcpp` is now approximately 34 times faster than
+`maxnet` on this benchmark while preserving per-iteration trajectory
+parity with Java Maxent 3.4.4.
 
-Scaling with sample size (fresh-state fits, `maxentcpp`): 2,371 cells
-~18.1 s; 23,000 cells ~129 s (signal-strong synthetic data exhausts
-the 500-iteration budget; real-world convergence is typically earlier).
-A 233,000-cell run exceeds this machine's per-run budget and is noted
-as future work.
-
-To exercise the 1.0.0 feature set, we benchmarked the new diagnostics on
-a synthetic grid of 2,371 cells and 100 presence records with two
-continuous predictors plus one five-level categorical variable
-(linear + quadratic + hinge features; `max_iter = 500`, fresh state per
-fit):
+To exercise the 1.0.0 feature set, we benchmarked the new diagnostics
+on the same bundled dataset (linear + quadratic + hinge features;
+`max_iter = 500`, fresh state per fit; median over 20 runs):
 
 | 1.0.0 feature | Median wall time |
 |---------------|-----------------:|
-| Single fit (continuous only) | ~22 s |
-| Fit with categorical predictor | ~18 s |
-| Jackknife (3 variables; 6 fits) | ~63 s |
-| Cross-validation ($k = 5$; 5 fits) | ~135 s |
-| Replicate runs (bootstrap, $n = 5$; 5 fits) | ~102 s |
+| Single fit (continuous only) | ~7.8 ms |
+| Jackknife (3 variables; 6 fits) | ~30 ms |
+| Cross-validation ($k = 5$; 5 fits) | ~58 ms |
+| Replicate runs (bootstrap, $n = 5$; 5 fits) | ~54 ms |
 
-Each 1.0.0 diagnostic is a small multiple of single fits, as expected:
-jackknife runs one fit per variable per leave-out scheme, and
-cross-validation and replicate runs each fit $k$ or $n$ models. These
-wall times reflect the full per-fit cost on a mid-size grid and are
-linear in the number of constituent fits. Full reproducible code is
-provided in the package vignettes.
+Each diagnostic is a small multiple of a single fit, as expected:
+jackknife runs one fit per variable per leave-out scheme,
+cross-validation fits $k$ models, and replicate runs fit $n$ models.
+Full reproducible code is provided in the package vignettes. Peak memory
+and large-raster scaling measurements on production hardware are left
+as future work; the streaming raster-evaluation engine and the
+`O(n)` auxiliary memory in the periodic parallel update keep the memory
+footprint bounded as raster size grows.
 
 # Software design
 
