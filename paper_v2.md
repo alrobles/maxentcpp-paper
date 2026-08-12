@@ -231,15 +231,20 @@ and `min_deviation = 0.001`. The Java side used the
 `MaxentJavaRunner.trainLinear2Var` harness from the `maxentcppCompTest`
 companion package, which invokes `density.Sequential` from Maxent
 3.4.4; the C++ side used the equivalent `maxentcpp` pipeline. On the
-full grid the two implementations agree to machine precision:
+On the full grid the two implementations agree to numerical
+precision (RMSE ~$6 \times 10^{-10}$, more than eight orders of
+magnitude below any ecologically meaningful difference; the residual
+comes from the Eigen/BLAS-vectorized reduction order, which is
+mathematically but not bit-identical to the scalar Java summation
+order):
 
 | Metric | Value |
 |--------|------:|
 | Pearson $r$ | 1.000000 |
 | Spearman $\rho$ | 1.000000 |
-| RMSE | $9.18 \times 10^{-18}$ |
-| Mean $\lvert\Delta\text{cloglog}\rvert$ | $4.15 \times 10^{-18}$ |
-| Max $\lvert\Delta\text{cloglog}\rvert$ | $8.76 \times 10^{-17}$ |
+| RMSE | $6.28 \times 10^{-10}$ |
+| Mean $\lvert\Delta\text{cloglog}\rvert$ | $2.94 \times 10^{-10}$ |
+| Max $\lvert\Delta\text{cloglog}\rvert$ | $6.24 \times 10^{-9}$ |
 | AUC (both) | 0.903525 |
 
 ![Predictions of Java Maxent 3.4.4 vs `maxentcpp` on identical training
@@ -272,13 +277,13 @@ replicates):
 
 | Factor | Level | $r$ vs true (`maxentcpp`) | $r$ vs true (`maxnet`) | $r$ (`maxentcpp` vs `maxnet`) | Mean $\lvert\Delta\rvert$ |
 |--------|-------|--------------------------:|-----------------------:|------------------------------:|--------------------------:|
-| Predictor $\rho$ | 0 | 0.890 | 0.940 | 0.985 | 0.044 |
-| Predictor $\rho$ | 0.8 | 0.869 | 0.936 | 0.973 | 0.045 |
-| Species | narrow, centered | 0.915 | 0.961 | 0.984 | 0.049 |
+| Predictor $\rho$ | 0 | 0.895 | 0.940 | 0.984 | 0.043 |
+| Predictor $\rho$ | 0.8 | 0.867 | 0.933 | 0.977 | 0.045 |
+| Species | narrow, centered | 0.918 | 0.961 | 0.984 | 0.048 |
 | Species | narrow, offset | 0.875 | 0.927 | 0.988 | 0.042 |
-| Species | wide, centered | 0.842 | 0.927 | 0.953 | 0.041 |
+| Species | wide, centered | 0.842 | 0.925 | 0.954 | 0.041 |
 | Species | wide, offset | 0.878 | 0.936 | 0.975 | 0.043 |
-| Sample size | 100 | 0.886 | 0.945 | 0.966 | 0.052 |
+| Sample size | 100 | 0.889 | 0.943 | 0.975 | 0.050 |
 | Sample size | 400 | 0.884 | 0.936 | 0.987 | 0.037 |
 
 ![Expanded virtual-species simulation: (left) Pearson $r$ against the
@@ -308,58 +313,57 @@ raster projection onto grids larger than available RAM is required.
 
 ## Performance benchmarks
 
-All timings below were measured on an Intel Xeon VM (R 4.1.2,
-`maxentcpp` 1.0.0 installed from source, `maxnet` 0.1.4, `dismo` 1.3-14,
-`predicts` 0.2-2) and exclude one-time warm-up (library / JVM load).
-Because `maxent_fit()` mutates the `FeaturedSpace` object in place, every
-timing uses a fresh `FeaturedSpace` (and fresh feature objects) per fit.
-The default `maxent_fit()` backend has been switched from the legacy
-`goodAlpha` optimizer to the Java-faithful `Sequential` optimizer, and
-the `O(n)` hot loops in `Sequential` are now vectorized with Eigen/BLAS.
+All timings below were measured on the benchmark machine used
+throughout this study (Intel Core Ultra 7 165H, 62 GiB RAM, Ubuntu
+24.04, R 4.6.0, `maxentcpp` 1.0.0 installed from the development
+source tree) and exclude one-time warm-up (library load). Because
+`maxent_fit()` mutates the `FeaturedSpace` object in place, every
+timing uses a fresh `FeaturedSpace` (and fresh feature objects) per
+fit. The default `maxent_fit()` backend has been switched from the
+legacy `goodAlpha` optimizer to the Java-faithful `Sequential`
+optimizer, and the `O(n)` hot loops in `Sequential` are now vectorized
+with Eigen/BLAS.
 
 Training time for the bundled *Abeillia abeillei* dataset (73 presences,
 2,371 background cells, linear + quadratic + hinge features, 44
-features, `max_iter = 500`; median over 100 fresh-state runs for
-`maxentcpp` and `maxnet`, and 20 fresh-state runs for `dismo` and
-`predicts`):
+features, `max_iter = 500`; median over 30 fresh-state runs):
 
-| Package | Version | Backend | Median time per fit | Training AUC | Iterations |
-|---|---|---|---|---:|---:|
-| `maxentcpp` (Sequential, default) | 1.0.0 | C++17 `Sequential` (Eigen/BLAS) | ~6.3 ms | 0.8033 | 141 |
-| `dismo` | 1.3-14 | Java Maxent `maxent.jar` | ~220 ms | 0.8048 | 360 |
-| `predicts` | 0.2-2 | Java Maxent `maxent.jar` (via `rJava`) | ~220 ms | 0.8048 | 360 |
-| `maxnet` | 0.1.4 | `glmnet` elastic-net | ~300 ms | 0.8040 | — |
+| Package | Median time per fit |
+|---------|--------------------:|
+| `maxentcpp` (Sequential, default) | ~5.0 ms |
+| `maxnet` | ~246 ms |
 
-`maxentcpp` converges in 141 iterations on this fixture. The
-end-to-end `maxent_run()` workflow adds ~2--3 ms each for evaluation,
+`maxentcpp` converges in 121 iterations on this fixture. The
+end-to-end `maxent_run()` workflow adds ~1--3 ms each for evaluation,
 percent contribution, and permutation importance, so the fit itself
 accounts for >99% of wall time. After the backend switch and
-vectorization, `maxentcpp` is now approximately 35--50 times faster than
-the other R implementations on this fixture while preserving
-per-iteration trajectory parity with Java Maxent 3.4.4. The Java-based
-wrappers pay a per-call JVM startup and file-serialization cost, and
-`maxnet` uses a different coordinate-descent optimizer; all four produce
-statistically equivalent AUCs.
+vectorization, `maxentcpp` is now approximately 49 times faster than
+`maxnet` on this benchmark while preserving per-iteration trajectory
+parity with Java Maxent 3.4.4 (see Numerical fidelity).
 
 To exercise the 1.0.0 feature set, we benchmarked the new diagnostics
-on the same bundled dataset (linear + quadratic + hinge features;
-`max_iter = 500`, fresh state per fit; median over 50 runs):
+on a synthetic grid (2,371 cells, 100 presence records, two continuous
+predictors plus one five-level categorical variable; linear + quadratic
++ hinge features; `max_iter = 500`, fresh state per fit):
 
 | 1.0.0 feature | Median wall time |
 |---------------|-----------------:|
-| Single fit (continuous only) | ~6.4 ms |
-| Jackknife (3 variables; 6 fits) | ~26 ms |
-| Cross-validation ($k = 5$; 5 fits) | ~47 ms |
-| Replicate runs (bootstrap, $n = 5$; 5 fits) | ~45 ms |
+| Single fit (continuous only) | ~6 ms |
+| Jackknife (3 variables; 6 fits) | ~28 ms |
+| Cross-validation ($k = 5$; 5 fits) | ~33 ms |
+| Replicate runs (bootstrap, $n = 5$; 5 fits) | ~26 ms |
 
 Each diagnostic is a small multiple of a single fit, as expected:
 jackknife runs one fit per variable per leave-out scheme,
 cross-validation fits $k$ models, and replicate runs fit $n$ models.
-Full reproducible code is provided in the package vignettes. Peak memory
-and large-raster scaling measurements on production hardware are left
-as future work; the streaming raster-evaluation engine and the
-`O(n)` auxiliary memory in the periodic parallel update keep the memory
-footprint bounded as raster size grows.
+Full reproducible code is provided in the package vignettes and the
+supplementary appendix. Peak memory was measured at ~157 MB for
+`maxent_run()` plus full-raster projection on the bundled dataset
+(2.3$\times$ less than `maxnet`'s ~358 MB); large-raster scaling
+measurements on grids larger than available RAM remain future work.
+The streaming raster-evaluation engine and the `O(n)` auxiliary memory
+in the periodic parallel update keep the memory footprint bounded as
+raster size grows.
 
 # Software design
 
@@ -537,7 +541,14 @@ symmetric fixtures and $< 10^{-6}$ on $\|\Delta\lambda\|_\infty$
 for asymmetric fixtures at every iteration checkpoint.
 **These bounds hold under the specific conditions of the test fixtures**
 (same compiler family, IEEE 754 double precision, deterministic
-iteration order). Floating-point ordering differences introduced by
+iteration order). The Eigen/BLAS-vectorized reductions used by the
+default `Sequential` backend are mathematically identical to the scalar
+loops but not bit-identical: vectorized summation order can shift
+individual trajectory checkpoints at the $\sim 10^{-10}$--$10^{-5}$
+level depending on platform BLAS, and the C++ streaming-parity tests
+therefore compare trajectories at an absolute/relative tolerance of
+$10^{-5}$ while loss and entropy remain at machine precision.
+Floating-point ordering differences introduced by
 alternative BLAS backends or aggressive compiler optimizations
 (e.g., `-ffast-math`) could widen the gap, though the sequential
 nature of the coordinate-ascent algorithm limits sensitivity to

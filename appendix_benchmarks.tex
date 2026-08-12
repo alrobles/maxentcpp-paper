@@ -3,12 +3,11 @@
 % maxentcpp paper v2 — supplementary material for performance optimization
 % ----------------------------------------------------------------------------
 % This appendix documents, in full detail, the benchmark suite that was run
-% against maxentcpp 1.0.0 (CRAN) on 11 August 2026, the exact methodology,
-% every measured number, and an analysis of where the runtime goes.  It is
-% written to be the working reference for optimizing the package: a developer
-% (e.g., an AI coding agent such as Devin) should be able to read this
-% appendix, reproduce every number, and identify the hot paths without
-% re-deriving the methodology.
+% against maxentcpp 1.0.0 with the Sequential/Eigen backend on 12 August 2026,
+% the exact methodology, every measured number, and an analysis of where the
+% runtime goes.  It is written to be the working reference for the package:
+% a developer should be able to read this appendix, reproduce every number,
+% and identify the hot paths without re-deriving the methodology.
 %
 % Compile: pdflatex appendix_benchmarks.tex  (standalone; no bibtex needed)
 % ============================================================================
@@ -35,7 +34,7 @@
 
 \title{\vspace{-1.5em}\textbf{Appendix: Performance Benchmarking Methodology and Results for \texttt{maxentcpp}}}\vspace{-0.5em}
 \author{Supplementary material --- maxentcpp paper v2}
-\date{11 August 2026}
+\date{12 August 2026}
 
 \begin{document}
 \maketitle

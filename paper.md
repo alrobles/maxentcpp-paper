@@ -201,30 +201,28 @@ raster projection onto grids larger than available RAM is required.
 ## Performance benchmarks
 
 Training time for the bundled *Abeillia abeillei* dataset (73 presences,
-2,371 background, linear + quadratic + hinge features), measured on an
-Intel Xeon VM (R 4.1.2, `maxentcpp` 1.0.0, `maxnet` 0.1.4, `dismo`
-1.3-14, `predicts` 0.2-2; `microbenchmark` repetitions with a fresh
-featured space per fit):
+2,371 background, linear + quadratic + hinge features), measured on the
+benchmark machine used throughout this study (Intel Core Ultra 7 165H,
+62 GiB RAM, R 4.6.0, 30 fresh-state repetitions with a fresh featured
+space per fit):
 
-| Package | Backend | Median time per fit | Training AUC |
-|---|---|---:|---:|
-| `maxentcpp` (Sequential, default) | C++17 `Sequential` (Eigen/BLAS) | ~6.3 ms | 0.8033 |
-| `dismo` | Java Maxent `maxent.jar` | ~220 ms | 0.8048 |
-| `predicts` | Java Maxent `maxent.jar` (via `rJava`) | ~220 ms | 0.8048 |
-| `maxnet` | `glmnet` elastic-net | ~300 ms | 0.8040 |
+| Package | Median time per fit |
+|---------|--------------------:|
+| `maxentcpp` (Sequential, default) | ~5.0 ms |
+| `maxnet` | ~246 ms |
 
 After switching the default `maxent_fit()` backend from the legacy
 `goodAlpha` optimizer to the Java-faithful `Sequential` optimizer and
 vectorizing the hot loops with Eigen/BLAS, `maxentcpp` is now
-approximately 35--50 times faster than the other R implementations on
-this fixture, while preserving the per-iteration trajectory parity
-validated against Java Maxent 3.4.4. The Java-based wrappers pay a per-call
-JVM startup and file-serialization cost, and `maxnet` uses a different
-optimization algorithm that can differ for threshold and hinge features;
-all four produce statistically equivalent AUCs.
+approximately 49 times faster than `maxnet` on this fixture, while
+preserving the per-iteration trajectory parity validated against Java
+Maxent 3.4.4. `maxnet` remains an excellent alternative when a pure-R
+`glmnet` path is preferred, but it uses a different optimization
+algorithm that can differ for threshold and hinge features.
 `maxentcpp`'s streaming evaluation also avoids materializing the full
-prediction matrix, which is expected to reduce peak memory during
-projection; future benchmarks should quantify this advantage on rasters
+prediction matrix, which reduces peak memory during projection
+(~157 MB vs ~358 MB for `maxnet` on the bundled dataset, a 2.3$\times$
+advantage); future benchmarks should quantify this advantage on rasters
 larger than available RAM.
 
 `maxentcpp` was built as a new package rather than contributing to
