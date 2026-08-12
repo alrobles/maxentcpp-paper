@@ -338,7 +338,9 @@ RAM is required.
 \subsection*{Performance benchmarks}
 
 Training time for the bundled \emph{Abeillia abeillei} dataset
-(73~presences, 2,371~background, linear + quadratic + hinge features):
+(73~presences, 2,371~background, linear + quadratic + hinge features),
+measured on an Intel Xeon VM (R~4.1.2, 100 \texttt{microbenchmark}
+repetitions with a fresh featured space per fit):
 
 \begin{table}[!ht]
 \centering
@@ -347,18 +349,25 @@ Training time for the bundled \emph{Abeillia abeillei} dataset
 \hline
 \textbf{Package} & \textbf{Median time per fit} \\
 \hline
-\texttt{maxentcpp} & $\sim$820\,ms \\
+\texttt{maxentcpp} (Sequential, default) & $\sim$7.8\,ms \\
 \hline
-\texttt{maxnet}    & $\sim$530\,ms \\
+\texttt{maxnet}                            & $\sim$270\,ms \\
 \hline
 \end{tabular}
 \label{tab:benchmark}
 \end{table}
 
-\texttt{maxnet} is faster for small datasets because \texttt{glmnet}'s
-coordinate descent is highly optimized for dense feature matrices.
-\texttt{maxentcpp}'s streaming evaluation avoids materializing the full
-prediction matrix, which is expected to reduce peak memory during
+After switching the default \texttt{maxent\_fit()} backend from the legacy
+\texttt{goodAlpha} optimizer to the Java-faithful \texttt{Sequential}
+optimizer and vectorizing the hot loops with Eigen/BLAS,
+\texttt{maxentcpp} is now approximately 34~times faster than
+\texttt{maxnet} on this fixture, while preserving the per-iteration
+trajectory parity validated against Java Maxent~3.4.4.
+\texttt{maxnet} remains an excellent alternative when a pure-R
+\texttt{glmnet} path is preferred, but it uses a different optimization
+algorithm that can differ for threshold and hinge features.
+\texttt{maxentcpp}'s streaming evaluation also avoids materializing the
+full prediction matrix, which is expected to reduce peak memory during
 projection; future benchmarks should quantify this advantage on rasters
 larger than available RAM.
 
