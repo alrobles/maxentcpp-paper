@@ -201,16 +201,24 @@ raster projection onto grids larger than available RAM is required.
 ## Performance benchmarks
 
 Training time for the bundled *Abeillia abeillei* dataset (73 presences,
-2,371 background, linear + quadratic + hinge features):
+2,371 background, linear + quadratic + hinge features), measured on an
+Intel Xeon VM (R 4.1.2, 100 `microbenchmark` repetitions with a fresh
+featured space per fit):
 
 | Package | Median time per fit |
 |---------|--------------------:|
-| `maxentcpp` | ~820 ms |
-| `maxnet` | ~530 ms |
+| `maxentcpp` (Sequential, default) | ~7.8 ms |
+| `maxnet` | ~270 ms |
 
-`maxnet` is faster for small datasets because `glmnet`'s coordinate
-descent is highly optimized for dense feature matrices.
-`maxentcpp`'s streaming evaluation avoids materializing the full
+After switching the default `maxent_fit()` backend from the legacy
+`goodAlpha` optimizer to the Java-faithful `Sequential` optimizer and
+vectorizing the hot loops with Eigen/BLAS, `maxentcpp` is now
+approximately 34 times faster than `maxnet` on this fixture, while
+preserving the per-iteration trajectory parity validated against Java
+Maxent 3.4.4. `maxnet` remains an excellent alternative when a pure-R
+`glmnet` path is preferred, but it uses a different optimization
+algorithm that can differ for threshold and hinge features.
+`maxentcpp`'s streaming evaluation also avoids materializing the full
 prediction matrix, which is expected to reduce peak memory during
 projection; future benchmarks should quantify this advantage on rasters
 larger than available RAM.
