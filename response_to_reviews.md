@@ -64,16 +64,17 @@ Legend: [x] done and verified · [~] in progress · [ ] planned
 > Trajectory-level fidelity is rigorous but internal; readers want direct prediction
 > comparisons: scatterplots, Pearson, RMSE, max abs diff, AUC.
 
-- [x] **Direct prediction comparison (verified 11 Aug 2026):** Java Maxent
+- [x] **Direct prediction comparison (verified 12 Aug 2026):** Java Maxent
       (maxent_mini.jar `MaxentJavaRunner.trainLinear2Var`) vs maxentcpp, both
       trained on identical 2,100-cell data (2,000 background + 100 presences from
       a Gaussian niche), linear features, max_iter=500, convergence=1e-5,
       beta=1.0, min_deviation=0.001:
       - Pearson r = 1.000000, Spearman ρ = 1.000000
-      - RMSE = 9.18e-18, mean abs diff = 4.15e-18, max abs diff = 8.76e-17
+      - RMSE = 6.28e-10, mean abs diff = 2.94e-10, max abs diff = 6.24e-09
       - AUC identical to 6 decimals: 0.903525 (both)
-      - i.e. predictions agree at machine precision — the strongest possible
-        prediction-level validation.
+      - i.e. predictions agree at numerical precision (the residual comes from
+        the Eigen/BLAS-vectorized reduction order, mathematically but not
+        bit-identical to the scalar Java summation).
 - [x] Scatterplot saved: `figures/java_vs_cpp_predictions.png` (1:1 line overlay).
 - [x] Add a prediction-comparison subsection reporting these numbers + figure.
 
