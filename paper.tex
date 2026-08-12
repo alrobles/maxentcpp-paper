@@ -66,6 +66,7 @@
 % additional packages for math and tables
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
+\usepackage{array}
 \usepackage{enumitem}
 
 % ── document begins ──────────────────────────────────────────────────────
@@ -339,20 +340,25 @@ RAM is required.
 
 Training time for the bundled \emph{Abeillia abeillei} dataset
 (73~presences, 2,371~background, linear + quadratic + hinge features),
-measured on an Intel Xeon VM (R~4.1.2, 100 \texttt{microbenchmark}
-repetitions with a fresh featured space per fit):
+measured on an Intel Xeon VM (R~4.1.2, \texttt{maxentcpp} 1.0.0,
+\texttt{maxnet} 0.1.4, \texttt{dismo} 1.3-14, \texttt{predicts}
+0.2-2; \texttt{microbenchmark} repetitions with a fresh featured space
+per fit):
 
 \begin{table}[!ht]
 \centering
 \caption{{\bf Training time comparison.}}
-\begin{tabular}{|l|r|}
-\hline
-\textbf{Package} & \textbf{Median time per fit} \\
-\hline
-\texttt{maxentcpp} (Sequential, default) & $\sim$7.8\,ms \\
-\hline
-\texttt{maxnet}                            & $\sim$270\,ms \\
-\hline
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{2.8cm}>{\raggedleft\arraybackslash}p{1.3cm}>{\raggedleft\arraybackslash}p{1.1cm}@{}}
+\toprule
+\textbf{Package} & \textbf{Backend} & \textbf{Time} & \textbf{AUC} \\
+\midrule
+\texttt{maxentcpp} (Sequential, default) & C++17 \texttt{Sequential} (Eigen/BLAS) & $\sim$6.3\,ms & 0.8033 \\
+\texttt{dismo} & Java Maxent \texttt{maxent.jar} & $\sim$220\,ms & 0.8048 \\
+\texttt{predicts} & Java Maxent \texttt{maxent.jar} (via \texttt{rJava}) & $\sim$220\,ms & 0.8048 \\
+\texttt{maxnet} & \texttt{glmnet} elastic-net & $\sim$300\,ms & 0.8040 \\
+\bottomrule
 \end{tabular}
 \label{tab:benchmark}
 \end{table}
@@ -360,12 +366,12 @@ repetitions with a fresh featured space per fit):
 After switching the default \texttt{maxent\_fit()} backend from the legacy
 \texttt{goodAlpha} optimizer to the Java-faithful \texttt{Sequential}
 optimizer and vectorizing the hot loops with Eigen/BLAS,
-\texttt{maxentcpp} is now approximately 34~times faster than
-\texttt{maxnet} on this fixture, while preserving the per-iteration
-trajectory parity validated against Java Maxent~3.4.4.
-\texttt{maxnet} remains an excellent alternative when a pure-R
-\texttt{glmnet} path is preferred, but it uses a different optimization
-algorithm that can differ for threshold and hinge features.
+\texttt{maxentcpp} is now approximately 35--50~times faster than the other
+R implementations on this fixture, while preserving the per-iteration
+trajectory parity validated against Java Maxent~3.4.4. The Java-based
+wrappers pay a per-call JVM startup and file-serialization cost, and
+\texttt{maxnet} uses a different coordinate-descent optimizer; all four
+produce statistically equivalent AUCs.
 \texttt{maxentcpp}'s streaming evaluation also avoids materializing the
 full prediction matrix, which is expected to reduce peak memory during
 projection; future benchmarks should quantify this advantage on rasters

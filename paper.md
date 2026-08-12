@@ -202,22 +202,26 @@ raster projection onto grids larger than available RAM is required.
 
 Training time for the bundled *Abeillia abeillei* dataset (73 presences,
 2,371 background, linear + quadratic + hinge features), measured on an
-Intel Xeon VM (R 4.1.2, 100 `microbenchmark` repetitions with a fresh
+Intel Xeon VM (R 4.1.2, `maxentcpp` 1.0.0, `maxnet` 0.1.4, `dismo`
+1.3-14, `predicts` 0.2-2; `microbenchmark` repetitions with a fresh
 featured space per fit):
 
-| Package | Median time per fit |
-|---------|--------------------:|
-| `maxentcpp` (Sequential, default) | ~7.8 ms |
-| `maxnet` | ~270 ms |
+| Package | Backend | Median time per fit | Training AUC |
+|---|---|---:|---:|
+| `maxentcpp` (Sequential, default) | C++17 `Sequential` (Eigen/BLAS) | ~6.3 ms | 0.8033 |
+| `dismo` | Java Maxent `maxent.jar` | ~220 ms | 0.8048 |
+| `predicts` | Java Maxent `maxent.jar` (via `rJava`) | ~220 ms | 0.8048 |
+| `maxnet` | `glmnet` elastic-net | ~300 ms | 0.8040 |
 
 After switching the default `maxent_fit()` backend from the legacy
 `goodAlpha` optimizer to the Java-faithful `Sequential` optimizer and
 vectorizing the hot loops with Eigen/BLAS, `maxentcpp` is now
-approximately 34 times faster than `maxnet` on this fixture, while
-preserving the per-iteration trajectory parity validated against Java
-Maxent 3.4.4. `maxnet` remains an excellent alternative when a pure-R
-`glmnet` path is preferred, but it uses a different optimization
-algorithm that can differ for threshold and hinge features.
+approximately 35--50 times faster than the other R implementations on
+this fixture, while preserving the per-iteration trajectory parity
+validated against Java Maxent 3.4.4. The Java-based wrappers pay a per-call
+JVM startup and file-serialization cost, and `maxnet` uses a different
+optimization algorithm that can differ for threshold and hinge features;
+all four produce statistically equivalent AUCs.
 `maxentcpp`'s streaming evaluation also avoids materializing the full
 prediction matrix, which is expected to reduce peak memory during
 projection; future benchmarks should quantify this advantage on rasters

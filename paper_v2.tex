@@ -517,8 +517,9 @@ required.
 \subsection*{Performance benchmarks}
 
 All timings below were measured on an Intel Xeon VM (R 4.1.2,
-\texttt{maxentcpp} 1.0.0 installed from source) and exclude one-time
-warm-up (library load). Because \texttt{maxent\_fit()} mutates the
+\texttt{maxentcpp} 1.0.0 installed from source, \texttt{maxnet} 0.1.4,
+\texttt{dismo} 1.3-14, \texttt{predicts} 0.2-2) and exclude one-time
+warm-up (library / JVM load). Because \texttt{maxent\_fit()} mutates the
 \texttt{FeaturedSpace} object in place, every timing uses a fresh
 \texttt{FeaturedSpace} (and fresh feature objects) per fit. The default
 \texttt{maxent\_fit()} backend has been switched from the legacy
@@ -528,18 +529,22 @@ vectorized with Eigen/BLAS.
 
 Training time for the bundled \emph{Abeillia abeillei} dataset (73
 presences, 2,371 background cells, linear + quadratic + hinge features,
-44 features, \texttt{max\_iter\ =\ 500}; median over 100 fresh-state runs):
+44 features, \texttt{max\_iter\ =\ 500}; median over 100 fresh-state runs
+for \texttt{maxentcpp} and \texttt{maxnet}, and 20 fresh-state runs for
+\texttt{dismo} and \texttt{predicts}):
 
-{\def\LTcaptype{none} % do not increment counter
-\begin{longtable}[]{@{}lr@{}}
+{\small\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}>{\raggedright\arraybackslash}p{3.0cm}>{\raggedright\arraybackslash}p{0.9cm}>{\raggedright\arraybackslash}p{3.2cm}rrr@{}}
 \toprule\noalign{}
-Package & Median time per fit \\
+Package & Ver. & Backend & Time & AUC & Iter. \\
 \midrule\noalign{}
 \endhead
 \bottomrule\noalign{}
 \endlastfoot
-\texttt{maxentcpp} (Sequential, default) & \textasciitilde7.8 ms \\
-\texttt{maxnet} & \textasciitilde270 ms \\
+\texttt{maxentcpp} (Sequential, default) & 1.0.0 & C++17 \texttt{Sequential} (Eigen/BLAS) & \textasciitilde6.3 ms & 0.8033 & 141 \\
+\texttt{dismo} & 1.3-14 & Java Maxent \texttt{maxent.jar} & \textasciitilde220 ms & 0.8048 & 360 \\
+\texttt{predicts} & 0.2-2 & Java Maxent \texttt{maxent.jar} (via \texttt{rJava}) & \textasciitilde220 ms & 0.8048 & 360 \\
+\texttt{maxnet} & 0.1.4 & \texttt{glmnet} elastic-net & \textasciitilde300 ms & 0.8040 & --- \\
 \end{longtable}
 }
 
@@ -548,12 +553,15 @@ end-to-end \texttt{maxent\_run()} workflow adds \textasciitilde2--3 ms
 each for evaluation, percent contribution, and permutation importance,
 so the fit itself accounts for \textgreater99\% of wall time. After the
 backend switch and vectorization, \texttt{maxentcpp} is now approximately
-34 times faster than \texttt{maxnet} on this benchmark while preserving
-per-iteration trajectory parity with Java Maxent 3.4.4.
+35--50 times faster than the other R implementations on this fixture while
+preserving per-iteration trajectory parity with Java Maxent 3.4.4. The
+Java-based wrappers pay a per-call JVM startup and file-serialization
+cost, and \texttt{maxnet} uses a different coordinate-descent optimizer;
+all four produce statistically equivalent AUCs.
 
 To exercise the 1.0.0 feature set, we benchmarked the new diagnostics on
 the same bundled dataset (linear + quadratic + hinge features;
-\texttt{max\_iter\ =\ 500}, fresh state per fit; median over 20 runs):
+\texttt{max\_iter\ =\ 500}, fresh state per fit; median over 50 runs):
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}lr@{}}
@@ -563,10 +571,10 @@ the same bundled dataset (linear + quadratic + hinge features;
 \endhead
 \bottomrule\noalign{}
 \endlastfoot
-Single fit (continuous only) & \textasciitilde7.8 ms \\
-Jackknife (3 variables; 6 fits) & \textasciitilde30 ms \\
-Cross-validation (\(k = 5\); 5 fits) & \textasciitilde58 ms \\
-Replicate runs (bootstrap, \(n = 5\); 5 fits) & \textasciitilde54 ms \\
+Single fit (continuous only) & \textasciitilde6.4 ms \\
+Jackknife (3 variables; 6 fits) & \textasciitilde26 ms \\
+Cross-validation (\(k = 5\); 5 fits) & \textasciitilde47 ms \\
+Replicate runs (bootstrap, \(n = 5\); 5 fits) & \textasciitilde45 ms \\
 \end{longtable}
 }
 
