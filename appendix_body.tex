@@ -4,8 +4,10 @@ This appendix documents the post-optimization benchmark suite used to
 verify that the new default \texttt{maxent\_fit()} backend --- the
 Java-faithful \texttt{Sequential} optimizer with Eigen/BLAS-vectorized
 hot loops --- preserves the numerical-fidelity contract with Java Maxent
-3.4.4 while reducing wall time by roughly $34\times$ versus
-\texttt{maxnet} on the bundled \emph{Abeillia abeillei} fixture.
+3.4.4 while reducing wall time by roughly $35\times$ versus the Java
+Maxent wrappers \texttt{dismo} and \texttt{predicts} and roughly
+$48\times$ versus \texttt{maxnet} on the bundled \emph{Abeillia abeillei}
+fixture.
 
 All numbers below were obtained by running the package on an Intel Xeon
 VM on 12 August 2026.  The benchmark scripts are listed in
@@ -27,6 +29,8 @@ R & 4.1.2 (2021-11-01) \\
 \texttt{maxentcpp} & 1.0.0 (installed from source) \\
 \texttt{terra} & 1.7.46 \\
 \texttt{maxnet} & 0.1.4 \\
+\texttt{dismo} & 1.3-14 \\
+\texttt{predicts} & 0.2-2 \\
 \bottomrule
 \end{tabular}
 \caption{Benchmark environment.}
@@ -72,20 +76,23 @@ annual mean temperature, \texttt{bio12} = annual precipitation), linear
 \begin{table}[h]
 \centering
 \small
-\begin{tabular}{lcc}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{2.8cm}>{\raggedleft\arraybackslash}p{1.3cm}>{\raggedleft\arraybackslash}p{1.1cm}>{\raggedleft\arraybackslash}p{1.0cm}@{}}
 \toprule
-\textbf{Measurement} & \textbf{maxentcpp} & \textbf{maxnet} \\
+\textbf{Package} & \textbf{Backend} & \textbf{Time} & \textbf{AUC} & \textbf{Iter.} \\
 \midrule
-Fresh-state fit, median of 100 runs & $\sim$7.8 ms & --- \\
-Warm fit, median of 3 runs & $\sim$0.25 s & $\sim$0.25 s \\
-Iterations to convergence (fresh) & 141 & --- \\
-End-to-end \texttt{maxent\_run()} (fit+eval+diag) & $<$15 ms & --- \\
+\texttt{maxentcpp} (Sequential, default) & C++17 \texttt{Sequential} (Eigen/BLAS) & $\sim$6.3 ms & 0.8033 & 141 \\
+\texttt{dismo} & Java Maxent \texttt{maxent.jar} & $\sim$220 ms & 0.8048 & 360 \\
+\texttt{predicts} & Java Maxent \texttt{maxent.jar} (via \texttt{rJava}) & $\sim$220 ms & 0.8048 & 360 \\
+\texttt{maxnet} & \texttt{glmnet} elastic-net & $\sim$300 ms & 0.8040 & --- \\
 \bottomrule
 \end{tabular}
-\caption{Fit time on the bundled \emph{Abeillia abeillei} dataset.
-The ``warm fit'' row for maxentcpp reuses a converged featured space and
-is shown only to demonstrate the in-place artifact; it is not a valid
-per-fit cost.}
+\caption{Fit time on the bundled \emph{Abeillia abeillei} dataset
+(73 presences, 2,371 background, linear + quadratic + hinge, 44 features,
+\texttt{max\_iter = 500}).  Medians over 100 fresh-state runs for
+\texttt{maxentcpp} and \texttt{maxnet}, and 20 fresh-state runs for
+\texttt{dismo} and \texttt{predicts}.  All four implementations give
+statistically equivalent AUCs.}
 \label{tab:fit}
 \end{table}
 
@@ -95,7 +102,7 @@ permutation importance, and CSV output; each of those stages now costs
 2--3\,ms, so the optimizer itself accounts for more than 99\% of the
 wall time.  The per-iteration cost is approximately
 \[
-7.8\text{ ms} / 141 \approx 0.055\text{ ms/iteration},
+6.3\text{ ms} / 141 \approx 0.045\text{ ms/iteration},
 \]
 three orders of magnitude below the pre-optimizer value.
 
@@ -112,14 +119,15 @@ median over 20 runs):
 \toprule
 \textbf{Diagnostic} & \textbf{Wall time} \\
 \midrule
-Single fit (continuous only) & $\sim$7.8 ms \\
-Jackknife (3 variables; 6 fits) & $\sim$30 ms \\
-Cross-validation ($k = 5$; 5 fits) & $\sim$58 ms \\
-Replicate runs (bootstrap, $n = 5$; 5 fits) & $\sim$54 ms \\
+Single fit (continuous only) & $\sim$6.4 ms \\
+Jackknife (3 variables; 6 fits) & $\sim$26 ms \\
+Cross-validation ($k = 5$; 5 fits) & $\sim$47 ms \\
+Replicate runs (bootstrap, $n = 5$; 5 fits) & $\sim$45 ms \\
 \bottomrule
 \end{tabular}
-\caption{1.0.0 diagnostics after the Sequential/Eigen optimization.
-Each diagnostic is a small multiple of a single fit, as expected.}
+\caption{1.0.0 diagnostics after the Sequential/Eigen optimization
+(median over 50 fresh-state runs).  Each diagnostic is a small multiple
+of a single fit, as expected.}
 \label{tab:diag}
 \end{table}
 
@@ -209,8 +217,10 @@ future work.
 The benchmark scripts used for this appendix are:
 
 \begin{itemize}[leftmargin=1.2em]
-\item \texttt{/tmp/bench\_final.R} --- fresh-state fit timings versus
-\texttt{maxnet} (100 runs, Sequential vs goodAlpha vs maxnet).
+\item \texttt{/tmp/bench\_multi\_final.R} --- fresh-state fit timings
+versus \texttt{maxnet}, \texttt{dismo}, and \texttt{predicts} (100 runs
+for \texttt{maxentcpp} and \texttt{maxnet}, 20 runs for the Java
+wrappers).
 \item \texttt{/tmp/bench\_diagnostics.R} --- 1.0.0 diagnostics timings
 (20 runs, single / jackknife / CV / replicates).
 \item The \texttt{maxentcppCompTest} package and the C++ unit-test suite
@@ -226,9 +236,10 @@ To re-run a single measurement, copy the script to a machine with
 \item The default fit backend is now \texttt{Sequential}, and the
 $O(n)$ hot loops are Eigen/BLAS-vectorized.
 \item On the bundled \emph{Abeillia abeillei} dataset the median
-fresh-state fit time dropped from $\sim$18\,s to $\sim$7.8\,ms, making
-\texttt{maxentcpp} approximately $34\times$ faster than \texttt{maxnet}
-on this fixture.
+fresh-state fit time dropped from $\sim$18\,s to $\sim$6.3\,ms, making
+\texttt{maxentcpp} approximately $35\times$ faster than the Java Maxent
+wrappers \texttt{dismo} and \texttt{predicts} and approximately
+$48\times$ faster than \texttt{maxnet} on this fixture.
 \item Java Maxent 3.4.4 trajectory and prediction parity are preserved
 at machine precision.
 \item The auxiliary memory of the periodic parallel update is now

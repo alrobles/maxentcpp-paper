@@ -309,41 +309,48 @@ raster projection onto grids larger than available RAM is required.
 ## Performance benchmarks
 
 All timings below were measured on an Intel Xeon VM (R 4.1.2,
-`maxentcpp` 1.0.0 installed from source) and exclude one-time warm-up
-(library load). Because `maxent_fit()` mutates the `FeaturedSpace`
-object in place, every timing uses a fresh `FeaturedSpace` (and fresh
-feature objects) per fit. The default `maxent_fit()` backend has been
-switched from the legacy `goodAlpha` optimizer to the Java-faithful
-`Sequential` optimizer, and the `O(n)` hot loops in `Sequential` are
-now vectorized with Eigen/BLAS.
+`maxentcpp` 1.0.0 installed from source, `maxnet` 0.1.4, `dismo` 1.3-14,
+`predicts` 0.2-2) and exclude one-time warm-up (library / JVM load).
+Because `maxent_fit()` mutates the `FeaturedSpace` object in place, every
+timing uses a fresh `FeaturedSpace` (and fresh feature objects) per fit.
+The default `maxent_fit()` backend has been switched from the legacy
+`goodAlpha` optimizer to the Java-faithful `Sequential` optimizer, and
+the `O(n)` hot loops in `Sequential` are now vectorized with Eigen/BLAS.
 
 Training time for the bundled *Abeillia abeillei* dataset (73 presences,
 2,371 background cells, linear + quadratic + hinge features, 44
-features, `max_iter = 500`; median over 100 fresh-state runs):
+features, `max_iter = 500`; median over 100 fresh-state runs for
+`maxentcpp` and `maxnet`, and 20 fresh-state runs for `dismo` and
+`predicts`):
 
-| Package | Median time per fit |
-|---------|--------------------:|
-| `maxentcpp` (Sequential, default) | ~7.8 ms |
-| `maxnet` | ~270 ms |
+| Package | Version | Backend | Median time per fit | Training AUC | Iterations |
+|---|---|---|---|---:|---:|
+| `maxentcpp` (Sequential, default) | 1.0.0 | C++17 `Sequential` (Eigen/BLAS) | ~6.3 ms | 0.8033 | 141 |
+| `dismo` | 1.3-14 | Java Maxent `maxent.jar` | ~220 ms | 0.8048 | 360 |
+| `predicts` | 0.2-2 | Java Maxent `maxent.jar` (via `rJava`) | ~220 ms | 0.8048 | 360 |
+| `maxnet` | 0.1.4 | `glmnet` elastic-net | ~300 ms | 0.8040 | — |
 
 `maxentcpp` converges in 141 iterations on this fixture. The
 end-to-end `maxent_run()` workflow adds ~2--3 ms each for evaluation,
 percent contribution, and permutation importance, so the fit itself
 accounts for >99% of wall time. After the backend switch and
-vectorization, `maxentcpp` is now approximately 34 times faster than
-`maxnet` on this benchmark while preserving per-iteration trajectory
-parity with Java Maxent 3.4.4.
+vectorization, `maxentcpp` is now approximately 35--50 times faster than
+the other R implementations on this fixture while preserving
+per-iteration trajectory parity with Java Maxent 3.4.4. The Java-based
+wrappers pay a per-call JVM startup and file-serialization cost, and
+`maxnet` uses a different coordinate-descent optimizer; all four produce
+statistically equivalent AUCs.
 
 To exercise the 1.0.0 feature set, we benchmarked the new diagnostics
 on the same bundled dataset (linear + quadratic + hinge features;
-`max_iter = 500`, fresh state per fit; median over 20 runs):
+`max_iter = 500`, fresh state per fit; median over 50 runs):
 
 | 1.0.0 feature | Median wall time |
 |---------------|-----------------:|
-| Single fit (continuous only) | ~7.8 ms |
-| Jackknife (3 variables; 6 fits) | ~30 ms |
-| Cross-validation ($k = 5$; 5 fits) | ~58 ms |
-| Replicate runs (bootstrap, $n = 5$; 5 fits) | ~54 ms |
+| Single fit (continuous only) | ~6.4 ms |
+| Jackknife (3 variables; 6 fits) | ~26 ms |
+| Cross-validation ($k = 5$; 5 fits) | ~47 ms |
+| Replicate runs (bootstrap, $n = 5$; 5 fits) | ~45 ms |
 
 Each diagnostic is a small multiple of a single fit, as expected:
 jackknife runs one fit per variable per leave-out scheme,
