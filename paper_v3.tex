@@ -1048,37 +1048,24 @@ below.
 \tightlist
 \item
   \textbf{GitHub Copilot} (GPT-4-based, 2025 version): code scaffolding
-  and boilerplate generation during the initial porting phases in
-  \texttt{alrobles/Maxent} and \texttt{alrobles/maxentcpp-devel}.
+  and boilerplate generation during the initial porting phases in developtment.
 \item
   \textbf{Devin} (Cognition AI, 2025--2026): incremental feature
   implementation, test writing, documentation generation, CRAN
   compliance fixes, CI configuration, and manuscript drafting.
-\item
-  \textbf{Claude} (Anthropic, 2025--2026): complex refactoring,
-  cross-cutting documentation, and code review.
 \end{itemize}
 
 \textbf{Nature and scope of assistance.} AI tools contributed to: C++
 code generation and refactoring from Java source, Rcpp binding
-scaffolding, R wrapper functions, \texttt{testthat} test scaffolding and
-expansion, \texttt{roxygen2} documentation, vignette drafting, pkgdown
-site configuration, CI workflow setup, CRAN compliance review, and
-manuscript drafting. The core algorithmic C++ classes
+scaffolding, R wrapper functions, \texttt{testthat} test scaffolding and expansion, \texttt{roxygen2} documentation, vignette drafting, pkgdown site configuration, CI workflow setup, CRAN compliance review, and manuscript drafting. The core algorithmic C++ classes
 (\texttt{Sequential}, \texttt{FeaturedSpace}, feature types) were
 translated from Java with AI assistance but under direct human
 supervision: each class was mapped line-by-line from the corresponding
 Java source, reviewed for correctness against the Java reference, and
 validated through the \texttt{maxentcppCompTest} trajectory comparison
-framework. The human author made all core design decisions, reviewed and
-edited all AI-generated code, and can independently explain and modify
-every algorithmically significant class (the optimizer methods are
-documented with line-by-line references to the corresponding Java
-source). The full development history is publicly available in the four
-repositories listed above.
-
+framework. The human author made all core design decisions, reviewed and edited all AI-generated code, and can independently explain and modify every algorithmically significant class (the optimizer methods are documented with line-by-line references to the corresponding Java
+source). 
 \section*{Acknowledgements}
-
 The author thanks Steven J. Phillips, Robert P. Anderson, and Robert E.
 Schapire for creating the original Maxent software and making the source
 code publicly available under an MIT license. The \texttt{Rcpp},
