@@ -24,7 +24,7 @@ bibliography: paper.bib
 
 Maximum Entropy (Maxent) modeling is the *de facto* standard for
 presence-only species distribution modeling (SDM) [@Phillips2006;
-@Phillips2004; @Elith2011], with foundational papers cited tens of
+@Elith2011], with foundational papers cited tens of
 thousands of times across ecology, conservation biology, and
 biogeography. Yet the reference implementation remains a Java desktop
 application [@Phillips2017], and every species run in a typical
@@ -424,13 +424,6 @@ infrastructure sublayers:
     +-------------------------------------+
 ```
 
-| Layer | Key components |
-|-------|----------------|
-| C++ core (algorithmic) | `Sequential`, `FeaturedSpace`, six feature types |
-| C++ core (I/O, diagnostics) | `BackgroundProvider`, grid I/O, CSV, MESS, response curves |
-| Rcpp bridge | `rcpp_*.cpp` external-pointer bindings [@Eddelbuettel2013] |
-| R interface | `maxent_run()`, feature generators, projection, evaluation, diagnostics, replicates, jackknife |
-
 The C++ core uses Eigen [@Guennebaud2010] for dense linear algebra.
 The high-level
 `maxent_run()` function provides a one-call workflow mirroring the Java
@@ -462,7 +455,8 @@ $j$ over the presence points (floored at 0.001).
 
 At each iteration, the optimizer selects the feature $j^*$ with
 the most negative $\Delta\mathcal{L}$ bound (the `deltaLossBound` function;
-block-coordinate ascent [@Tseng2001]),
+coordinate ascent [@Phillips2006], with convergence of the underlying
+block-coordinate-descent flavor analyzed by [@Tseng2001]),
 then computes a Newton step:
 
 $$
@@ -526,20 +520,11 @@ risk is the usual bounded rounding error of a double-precision sum.
 
 ## Numerical fidelity
 
-Each C++ class is a direct translation of its Java counterpart,
-preserving the same control flow, regularization logic, and numerical
-constants:
-
-| `maxentcpp` (C++) | Java Maxent original |
-|-------------------|----------------------|
-| `LinearFeature` | `density.LinearFeature` |
-| `QuadraticFeature` | `density.SquareFeature` |
-| `ProductFeature` | `density.ProductFeature` |
-| `HingeFeature` | `density.HingeFeature` |
-| `ThresholdFeature` | `density.ThresholdFeature` |
-| `BinaryFeature` | `density.BinaryFeature` |
-| `FeaturedSpace` | `density.FeaturedSpace` |
-| `Sequential::run()` | `density.Sequential.run()` |
+Each C++ class is a direct translation of its Java counterpart (e.g.
+`LinearFeature` maps to `density.LinearFeature`, `FeaturedSpace` maps to
+`density.FeaturedSpace`, `Sequential::run()` maps to
+`density.Sequential.run()`), preserving the same control flow,
+regularization logic, and numerical constants.
 
 This design choice prioritizes backward compatibility: users migrating
 from Java Maxent should obtain numerically equivalent results for

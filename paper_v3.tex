@@ -125,12 +125,12 @@ implementation via a companion test package.
 
 Maximum Entropy (Maxent) modeling is the \emph{de facto} standard for
 presence-only species distribution modeling (SDM)
-\cite{Phillips2006,Phillips2004,Elith2011}, with foundational papers
-cited tens of thousands of times across ecology, conservation biology,
-and biogeography. Yet the reference implementation remains a Java
-desktop application \cite{Phillips2017}, and every species run in a
-typical workflow --- e.g., 500 species \(\times\) 4 climatic scenarios
---- spawns a JVM and round-trips data through SWD files on disk.
+\cite{Phillips2006,Elith2011}, with foundational papers cited tens of
+thousands of times across ecology, conservation biology, and
+biogeography. Yet the reference implementation remains a Java desktop
+application \cite{Phillips2017}, and every species run in a typical
+workflow --- e.g., 500 species \(\times\) 4 climatic scenarios ---
+spawns a JVM and round-trips data through SWD files on disk.
 \texttt{maxentcpp} is an R package that removes this friction with a
 native C++17 reimplementation of the Maxent algorithm. It estimates the
 geographic distribution of a species from presence-only occurrence
@@ -272,7 +272,6 @@ R/\texttt{terra} workflows.
 The R ecosystem contains several packages that provide access to MaxEnt
 models, each employing a distinct integration strategy:
 
-{\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}
   >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.1364}}
   >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2879}}
@@ -317,7 +316,6 @@ variable selection & dismo or maxnet & wraps or approximates \\
 \textbf{maxentcpp} & Native C++17 via Rcpp & None (self-contained) &
 reproduces original optimizer \\
 \end{longtable}
-}
 
 These packages can be grouped by their relationship to the MaxEnt
 algorithm:
@@ -364,7 +362,6 @@ Both packages were fitted with linear, quadratic, and hinge features. In
 this illustrative example, the two packages produced highly similar rank
 and spatial-overlap patterns:
 
-{\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}lr@{}}
 \toprule\noalign{}
 Metric & Value \\
@@ -378,7 +375,6 @@ Pearson \(r\) & 0.97 \\
 Mean \(\lvert\Delta\text{cloglog}\rvert\) & 0.053 \\
 Max \(\lvert\Delta\text{cloglog}\rvert\) & 0.43 \\
 \end{longtable}
-}
 
 \subsubsection*{Direct prediction agreement with Java
 Maxent}
@@ -393,14 +389,14 @@ niche), with linear features, \texttt{max\_iter\ =\ 500},
 \texttt{MaxentJavaRunner.trainLinear2Var} harness from the
 \texttt{maxentcppCompTest} companion package, which invokes
 \texttt{density.Sequential} from Maxent 3.4.4; the C++ side used the
-equivalent \texttt{maxentcpp} pipeline. On the full grid the two
+equivalent \texttt{maxentcpp} pipeline. On the On the full grid the two
 implementations agree to numerical precision (RMSE
-\(\sim 6 \times 10^{-10}\), more than eight orders of magnitude below
-any ecologically meaningful difference; the residual comes from the
-Eigen/BLAS-vectorized reduction order, which is mathematically but not
-bit-identical to the scalar Java summation order):
+\textasciitilde{}\(6 \times 10^{-10}\), more than eight orders of
+magnitude below any ecologically meaningful difference; the residual
+comes from the Eigen/BLAS-vectorized reduction order, which is
+mathematically but not bit-identical to the scalar Java summation
+order):
 
-{\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}lr@{}}
 \toprule\noalign{}
 Metric & Value \\
@@ -415,13 +411,12 @@ Mean \(\lvert\Delta\text{cloglog}\rvert\) & \(2.94 \times 10^{-10}\) \\
 Max \(\lvert\Delta\text{cloglog}\rvert\) & \(6.24 \times 10^{-9}\) \\
 AUC (both) & 0.903525 \\
 \end{longtable}
-}
 
 \begin{figure}
 \centering
 \includegraphics[width=0.6\linewidth,height=\textheight,keepaspectratio,alt={Predictions of Java Maxent 3.4.4 vs maxentcpp on identical training data; the 1:1 line is overlaid in red.}]{figures/java_vs_cpp_predictions.png}
-\caption{Predictions of Java Maxent 3.4.4 vs \protect\texttt{maxentcpp}
-on identical training data; the 1:1 line is overlaid in
+\caption{Predictions of Java Maxent 3.4.4 vs \texttt{maxentcpp} on
+identical training data; the 1:1 line is overlaid in
 red.}\label{fig:javacpp}
 \end{figure}
 
@@ -447,32 +442,48 @@ presence records), and three replicates --- 48 fitted models in total.
 Each model was compared against the known true suitability surface and
 against the other package (medians over replicates):
 
-{\footnotesize
-  \renewcommand{\arraystretch}{1.3}
-  \begin{tabular}{@{}llrrrr@{}}
-    \toprule
-    Factor & Level & \shortstack{$r$ vs true\\ (\texttt{maxentcpp})} & \shortstack{$r$ vs true\\ (\texttt{maxnet})} & \shortstack{$r$\\ (\texttt{maxentcpp} vs \texttt{maxnet})} & \shortstack{Mean\\ $\lvert\Delta\rvert$} \\
-    \midrule
-    Predictor $\rho$ & 0 & 0.895 & 0.940 & 0.984 & 0.043 \\
-    Predictor $\rho$ & 0.8 & 0.867 & 0.933 & 0.977 & 0.045 \\
-    Species & narrow, centered & 0.918 & 0.961 & 0.984 & 0.048 \\
-    Species & narrow, offset & 0.875 & 0.927 & 0.988 & 0.042 \\
-    Species & wide, centered & 0.842 & 0.925 & 0.954 & 0.041 \\
-    Species & wide, offset & 0.878 & 0.936 & 0.975 & 0.043 \\
-    Sample size & 100 & 0.889 & 0.943 & 0.975 & 0.050 \\
-    Sample size & 400 & 0.884 & 0.936 & 0.987 & 0.037 \\
-    \bottomrule
-  \end{tabular}
-}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.0645}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.0565}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.2177}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1935}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.2500}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.2177}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Factor
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Level
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+\(r\) vs true (\texttt{maxentcpp})
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+\(r\) vs true (\texttt{maxnet})
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+\(r\) (\texttt{maxentcpp} vs \texttt{maxnet})
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Mean \(\lvert\Delta\rvert\)
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Predictor \(\rho\) & 0 & 0.895 & 0.940 & 0.984 & 0.043 \\
+Predictor \(\rho\) & 0.8 & 0.867 & 0.933 & 0.977 & 0.045 \\
+Species & narrow, centered & 0.918 & 0.961 & 0.984 & 0.048 \\
+Species & narrow, offset & 0.875 & 0.927 & 0.988 & 0.042 \\
+Species & wide, centered & 0.842 & 0.925 & 0.954 & 0.041 \\
+Species & wide, offset & 0.878 & 0.936 & 0.975 & 0.043 \\
+Sample size & 100 & 0.889 & 0.943 & 0.975 & 0.050 \\
+Sample size & 400 & 0.884 & 0.936 & 0.987 & 0.037 \\
+\end{longtable}
 
 \begin{figure}
 \centering
 \includegraphics[width=0.85\linewidth,height=\textheight,keepaspectratio,alt={Expanded virtual-species simulation: (left) Pearson r against the true suitability surface by species and predictor correlation; (right) agreement between maxentcpp and maxnet by sample size and correlation.}]{figures/simulation_summary.png}
 \caption{Expanded virtual-species simulation: (left) Pearson \(r\)
 against the true suitability surface by species and predictor
-correlation; (right) agreement between \protect\texttt{maxentcpp} and
-\protect\texttt{maxnet} by sample size and
-correlation.}\label{fig:simsum}
+correlation; (right) agreement between \texttt{maxentcpp} and
+\texttt{maxnet} by sample size and correlation.}\label{fig:simsum}
 \end{figure}
 
 Across all 48 models, \texttt{maxentcpp} and \texttt{maxnet} agreed
@@ -498,18 +509,17 @@ required.
 
 \subsection*{Performance benchmarks}
 
-All timings below were measured on the benchmark machine used
-throughout this study (Intel Core Ultra 7 165H, 62 GiB RAM, Ubuntu
-24.04, R 4.6.0, \texttt{maxentcpp} 1.0.0 installed from the development
-source tree, \texttt{maxnet} 0.1.4, \texttt{dismo} 1.3-14,
-\texttt{predicts} 0.2-2) and exclude one-time warm-up (library / JVM
-load). Because
+All timings below were measured on the benchmark machine used throughout
+this study (Intel Core Ultra 7 165H, 62 GiB RAM, Ubuntu 24.04, R 4.6.0,
+\texttt{maxentcpp} 1.0.0 installed from the development source tree,
+\texttt{maxnet} 0.1.4, \texttt{dismo} 1.3-14, \texttt{predicts} 0.2-2)
+and exclude one-time warm-up (library / JVM load). Because
 \texttt{maxent\_fit()} mutates the \texttt{FeaturedSpace} object in
 place, every timing uses a fresh \texttt{FeaturedSpace} (and fresh
-feature objects) per fit. The default \texttt{maxent\_fit()} backend
-has been switched from the legacy \texttt{goodAlpha} optimizer to the
-Java-faithful \texttt{Sequential} optimizer, and the \(O(n)\) hot loops
-in \texttt{Sequential} are now vectorized with Eigen/BLAS.
+feature objects) per fit. The default \texttt{maxent\_fit()} backend has
+been switched from the legacy \texttt{goodAlpha} optimizer to the
+Java-faithful \texttt{Sequential} optimizer, and the \texttt{O(n)} hot
+loops in \texttt{Sequential} are now vectorized with Eigen/BLAS.
 
 Training time for the bundled \emph{Abeillia abeillei} dataset (73
 presences, 2,371 background cells, linear + quadratic + hinge features,
@@ -517,23 +527,44 @@ presences, 2,371 background cells, linear + quadratic + hinge features,
 for \texttt{maxentcpp} and \texttt{maxnet}, 10 runs for \texttt{dismo}
 and \texttt{predicts}):
 
-{\def\LTcaptype{none} % do not increment counter
-\begin{longtable}[]{@{}lrrr@{}}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1500}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1500}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1500}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1500}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.2000}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.2000}}@{}}
 \toprule\noalign{}
-Package & Median time per fit & Training AUC & Iterations \\
+\begin{minipage}[b]{\linewidth}\raggedright
+Package
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Version
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Backend
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Median time per fit
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Training AUC
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Iterations
+\end{minipage} \\
 \midrule\noalign{}
 \endhead
 \bottomrule\noalign{}
 \endlastfoot
-\texttt{maxentcpp} (Sequential, default) & \textasciitilde6.0 ms & 0.8035 & 121 \\
-\texttt{predicts} & \textasciitilde152 ms & 0.7735 & 280 \\
-\texttt{dismo} & \textasciitilde163 ms & 0.7735 & 280 \\
-\texttt{maxnet} & \textasciitilde256 ms & 0.7816 & --- \\
+\texttt{maxentcpp} (Sequential, default) & 1.0.0 & C++17
+\texttt{Sequential} (Eigen/BLAS) & \textasciitilde6.0 ms & 0.8035 &
+121 \\
+\texttt{predicts} & 0.2-2 & Java Maxent \texttt{maxent.jar} (via
+\texttt{rJava}) & \textasciitilde152 ms & 0.7735 & 280 \\
+\texttt{dismo} & 1.3-14 & Java Maxent \texttt{maxent.jar} &
+\textasciitilde163 ms & 0.7735 & 280 \\
+\texttt{maxnet} & 0.1.4 & \texttt{glmnet} elastic-net &
+\textasciitilde256 ms & 0.7816 & --- \\
 \end{longtable}
-}
 
 Training AUCs are computed on each package's own training/background
-frame (e.g.\ \texttt{maxentcpp} and \texttt{maxnet} evaluate on their
+frame (e.g.~\texttt{maxentcpp} and \texttt{maxnet} evaluate on their
 sampled vs all-cell background, \texttt{dismo}/\texttt{predicts} report
 Java's training AUC) and are therefore not strictly comparable across
 rows; the statistical equivalence of predictions is established by the
@@ -543,15 +574,16 @@ cell).
 \texttt{maxentcpp} converges in 121 iterations on this fixture (Java
 \texttt{maxent.jar} needs 280). The end-to-end \texttt{maxent\_run()}
 workflow adds \textasciitilde1--3 ms each for evaluation, percent
-contribution, and permutation importance, so the fit itself accounts
-for \textgreater99\% of wall time. After the backend switch and
+contribution, and permutation importance, so the fit itself accounts for
+\textgreater99\% of wall time. After the backend switch and
 vectorization, \texttt{maxentcpp} is now approximately 25--43 times
 faster than the other R implementations on this fixture
-(\textasciitilde43$\times$ vs \texttt{maxnet}, \textasciitilde27$\times$
-vs \texttt{dismo}, \textasciitilde25$\times$ vs \texttt{predicts}) while
-preserving per-iteration trajectory parity with Java Maxent 3.4.4 (see
-Numerical fidelity). The Java-based wrappers pay a per-call JVM startup
-and file-serialization cost that \texttt{maxentcpp} eliminates;
+(\textasciitilde43\(\times\) vs \texttt{maxnet},
+\textasciitilde27\(\times\) vs \texttt{dismo},
+\textasciitilde25\(\times\) vs \texttt{predicts}) while preserving
+per-iteration trajectory parity with Java Maxent 3.4.4 (see Numerical
+fidelity). The Java-based wrappers pay a per-call JVM startup and
+file-serialization cost that \texttt{maxentcpp} eliminates;
 \texttt{maxnet} uses a different coordinate-descent optimizer.
 
 To exercise the 1.0.0 feature set, we benchmarked the new diagnostics on
@@ -559,7 +591,6 @@ a synthetic grid (2,371 cells, 100 presence records, two continuous
 predictors plus one five-level categorical variable; linear + quadratic
 + hinge features; \texttt{max\_iter\ =\ 500}, fresh state per fit):
 
-{\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}lr@{}}
 \toprule\noalign{}
 1.0.0 feature & Median wall time \\
@@ -572,7 +603,6 @@ Jackknife (3 variables; 6 fits) & \textasciitilde28 ms \\
 Cross-validation (\(k = 5\); 5 fits) & \textasciitilde33 ms \\
 Replicate runs (bootstrap, \(n = 5\); 5 fits) & \textasciitilde26 ms \\
 \end{longtable}
-}
 
 Each diagnostic is a small multiple of a single fit, as expected:
 jackknife runs one fit per variable per leave-out scheme,
@@ -580,10 +610,10 @@ cross-validation fits \(k\) models, and replicate runs fit \(n\) models.
 Full reproducible code is provided in the package vignettes and the
 supplementary appendix. Peak memory was measured at \textasciitilde157
 MB for \texttt{maxent\_run()} plus full-raster projection on the bundled
-dataset (2.3$\times$ less than \texttt{maxnet}'s \textasciitilde358 MB);
-large-raster scaling measurements on grids larger than available RAM
-remain future work. The streaming raster-evaluation engine and the
-\(O(n)\) auxiliary memory in the periodic parallel update keep the
+dataset (2.3\(\times\) less than \texttt{maxnet}'s \textasciitilde358
+MB); large-raster scaling measurements on grids larger than available
+RAM remain future work. The streaming raster-evaluation engine and the
+\texttt{O(n)} auxiliary memory in the periodic parallel update keep the
 memory footprint bounded as raster size grows.
 
 \section*{Software design}
@@ -631,31 +661,6 @@ infrastructure sublayers:
     +-------------------------------------+
 \end{verbatim}
 
-{\def\LTcaptype{none} % do not increment counter
-\begin{longtable}[]{@{}
-  >{\raggedright\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.3043}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.6957}}@{}}
-\toprule\noalign{}
-\begin{minipage}[b]{\linewidth}\raggedright
-Layer
-\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
-Key components
-\end{minipage} \\
-\midrule\noalign{}
-\endhead
-\bottomrule\noalign{}
-\endlastfoot
-C++ core (algorithmic) & \texttt{Sequential}, \texttt{FeaturedSpace},
-six feature types \\
-C++ core (I/O, diagnostics) & \texttt{BackgroundProvider}, grid I/O,
-CSV, MESS, response curves \\
-Rcpp bridge & \texttt{rcpp\_*.cpp} external-pointer bindings
-\cite{Eddelbuettel2013} \\
-R interface & \texttt{maxent\_run()}, feature generators, projection,
-evaluation, diagnostics, replicates, jackknife \\
-\end{longtable}
-}
-
 The C++ core uses Eigen \cite{Guennebaud2010} for dense linear algebra.
 The high-level \texttt{maxent\_run()} function provides a one-call
 workflow mirroring the Java GUI experience, while lower-level functions
@@ -687,8 +692,9 @@ parameter with \(\hat\sigma_j\) being the standard deviation of feature
 
 At each iteration, the optimizer selects the feature \(j^*\) with the
 most negative \(\Delta\mathcal{L}\) bound (the \texttt{deltaLossBound}
-function; block-coordinate ascent \cite{Tseng2001}), then computes a
-Newton step:
+function; coordinate ascent \cite{Phillips2006}, with convergence of
+the underlying block-coordinate-descent flavor analyzed by
+\cite{Tseng2001}), then computes a Newton step:
 
 \[
 \alpha_j = -\frac{\partial \mathcal{L}/\partial \lambda_j}
@@ -753,28 +759,12 @@ risk is the usual bounded rounding error of a double-precision sum.
 
 \subsection*{Numerical fidelity}
 
-Each C++ class is a direct translation of its Java counterpart,
+Each C++ class is a direct translation of its Java counterpart (e.g.
+\texttt{LinearFeature} maps to \texttt{density.LinearFeature},
+\texttt{FeaturedSpace} maps to \texttt{density.FeaturedSpace},
+\texttt{Sequential::run()} maps to \texttt{density.Sequential.run()}),
 preserving the same control flow, regularization logic, and numerical
-constants:
-
-{\def\LTcaptype{none} % do not increment counter
-\begin{longtable}[]{@{}ll@{}}
-\toprule\noalign{}
-\texttt{maxentcpp} (C++) & Java Maxent original \\
-\midrule\noalign{}
-\endhead
-\bottomrule\noalign{}
-\endlastfoot
-\texttt{LinearFeature} & \texttt{density.LinearFeature} \\
-\texttt{QuadraticFeature} & \texttt{density.SquareFeature} \\
-\texttt{ProductFeature} & \texttt{density.ProductFeature} \\
-\texttt{HingeFeature} & \texttt{density.HingeFeature} \\
-\texttt{ThresholdFeature} & \texttt{density.ThresholdFeature} \\
-\texttt{BinaryFeature} & \texttt{density.BinaryFeature} \\
-\texttt{FeaturedSpace} & \texttt{density.FeaturedSpace} \\
-\texttt{Sequential::run()} & \texttt{density.Sequential.run()} \\
-\end{longtable}
-}
+constants.
 
 This design choice prioritizes backward compatibility: users migrating
 from Java Maxent should obtain numerically equivalent results for
@@ -790,21 +780,20 @@ representation), agreement reaches \(< 10^{-14}\) relative error for
 symmetric fixtures and \(< 10^{-6}\) on \(\|\Delta\lambda\|_\infty\) for
 asymmetric fixtures at every iteration checkpoint. \textbf{These bounds
 hold under the specific conditions of the test fixtures} (same compiler
-family, IEEE 754 double precision, deterministic iteration order).
-The Eigen/BLAS-vectorized reductions used by the default
-\texttt{Sequential} backend are mathematically identical to the scalar
-loops but not bit-identical: vectorized summation order can shift
-individual trajectory checkpoints at the \(\sim 10^{-10}\)--\(10^{-5}\)
-level depending on platform BLAS, and the C++ streaming-parity tests
-therefore compare trajectories at an absolute/relative tolerance of
-\(10^{-5}\) while loss and entropy remain at machine precision.
-Floating-point ordering differences introduced by alternative BLAS
-backends or aggressive compiler optimizations (e.g.,
-\texttt{-ffast-math}) could widen the gap, though the sequential nature
-of the coordinate-ascent algorithm limits sensitivity to
-parallelism-induced reordering. Cross-platform CI (Ubuntu, macOS,
-Windows with GCC, Clang, and MSVC) confirms that the test fixtures pass
-on all three compiler families.
+family, IEEE 754 double precision, deterministic iteration order). The
+Eigen/BLAS-vectorized reductions used by the default \texttt{Sequential}
+backend are mathematically identical to the scalar loops but not
+bit-identical: vectorized summation order can shift individual
+trajectory checkpoints at the \(\sim 10^{-10}\)--\(10^{-5}\) level
+depending on platform BLAS, and the C++ streaming-parity tests therefore
+compare trajectories at an absolute/relative tolerance of \(10^{-5}\)
+while loss and entropy remain at machine precision. Floating-point
+ordering differences introduced by alternative BLAS backends or
+aggressive compiler optimizations (e.g., \texttt{-ffast-math}) could
+widen the gap, though the sequential nature of the coordinate-ascent
+algorithm limits sensitivity to parallelism-induced reordering.
+Cross-platform CI (Ubuntu, macOS, Windows with GCC, Clang, and MSVC)
+confirms that the test fixtures pass on all three compiler families.
 
 \textbf{Lambda file compatibility.} Trained models are serialized in the
 same \texttt{.lambdas} text format used by Java Maxent 3.4.4. Lambda
@@ -819,7 +808,6 @@ relative to Java Maxent 3.4.4 and \texttt{maxnet}:
 Legend: ✓ = implemented and tested; ◐ = partial or experimental; --- =
 not implemented.
 
-{\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}lccc@{}}
 \toprule\noalign{}
 Feature & \texttt{maxentcpp} & Java Maxent 3.4.4 & \texttt{maxnet}
@@ -848,7 +836,6 @@ Jackknife variable selection & ✓ & ✓ & --- \\
 Missing data handling & ✓ & ✓ & ✓ \\
 SWD-to-raster projection & --- & ✓ & --- \\
 \end{longtable}
-}
 
 Categorical variables, replicate runs, jackknife, missing-data handling,
 and background bias weighting are now implemented and tested.
@@ -1026,24 +1013,37 @@ below.
 \tightlist
 \item
   \textbf{GitHub Copilot} (GPT-4-based, 2025 version): code scaffolding
-  and boilerplate generation during the initial porting phases in developtment.
+  and boilerplate generation during the initial porting phases in
+  \texttt{alrobles/Maxent} and \texttt{alrobles/maxentcpp-devel}.
 \item
   \textbf{Devin} (Cognition AI, 2025--2026): incremental feature
   implementation, test writing, documentation generation, CRAN
   compliance fixes, CI configuration, and manuscript drafting.
+\item
+  \textbf{Claude} (Anthropic, 2025--2026): complex refactoring,
+  cross-cutting documentation, and code review.
 \end{itemize}
 
 \textbf{Nature and scope of assistance.} AI tools contributed to: C++
 code generation and refactoring from Java source, Rcpp binding
-scaffolding, R wrapper functions, \texttt{testthat} test scaffolding and expansion, \texttt{roxygen2} documentation, vignette drafting, pkgdown site configuration, CI workflow setup, CRAN compliance review, and manuscript drafting. The core algorithmic C++ classes
+scaffolding, R wrapper functions, \texttt{testthat} test scaffolding and
+expansion, \texttt{roxygen2} documentation, vignette drafting, pkgdown
+site configuration, CI workflow setup, CRAN compliance review, and
+manuscript drafting. The core algorithmic C++ classes
 (\texttt{Sequential}, \texttt{FeaturedSpace}, feature types) were
 translated from Java with AI assistance but under direct human
 supervision: each class was mapped line-by-line from the corresponding
 Java source, reviewed for correctness against the Java reference, and
 validated through the \texttt{maxentcppCompTest} trajectory comparison
-framework. The human author made all core design decisions, reviewed and edited all AI-generated code, and can independently explain and modify every algorithmically significant class (the optimizer methods are documented with line-by-line references to the corresponding Java
-source). 
+framework. The human author made all core design decisions, reviewed and
+edited all AI-generated code, and can independently explain and modify
+every algorithmically significant class (the optimizer methods are
+documented with line-by-line references to the corresponding Java
+source). The full development history is publicly available in the four
+repositories listed above.
+
 \section*{Acknowledgements}
+
 The author thanks Steven J. Phillips, Robert P. Anderson, and Robert E.
 Schapire for creating the original Maxent software and making the source
 code publicly available under an MIT license. The \texttt{Rcpp},
